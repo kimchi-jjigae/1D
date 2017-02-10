@@ -1,0 +1,21 @@
+@font-face
+{
+    font-family: pixelbug;
+    src: url('../assets/fonts/pixel_bug.otf') format("opentype");
+}
+
+html {
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: black;
+}
+
+canvas {
+    display: block;
+    margin: auto 0;
+}
