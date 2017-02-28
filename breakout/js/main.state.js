@@ -35,8 +35,8 @@ MainState.prototype = {
         game.load.image('block3', 'assets/sprites/block4.png');
         game.load.image('bg',     'assets/sprites/bg.png');
 
-        game.load.audio('blopp1', 'assets/sfx/blopp1.wav');
-        game.load.audio('blopp2', 'assets/sfx/blopp2.wav');
+        game.load.audio('blopp1', 'assets/sfx/blopp2.wav');
+        game.load.audio('blopp2', 'assets/sfx/blopp1.wav');
         game.load.audio('gameover', 'assets/sfx/gameover.wav');
 
         this.blockSprites = game.add.group();
