@@ -1,7 +1,7 @@
 @font-face
 {
     font-family: pixelbug;
-    src: url('../assets/fonts/pixel_bug.otf') format("opentype");
+    src: url('../static/fonts/pixel_bug.otf') format("opentype");
 }
 
 html {
