@@ -4,6 +4,9 @@ var game = new Phaser.Game(1366, 768, Phaser.AUTO, '', null, false, false);
 
 var MainState = function() {};
 MainState.prototype = {
+    button1: undefined,
+    button2: undefined,
+
     worldLength: 40,
     tileSize: 32,
     xOffset: 43,
@@ -24,7 +27,23 @@ MainState.prototype = {
     blopp1SFX: undefined,
     blopp2SFX: undefined,
 
+    started: false,
+    startGame: function() {
+        this.button1.visible = false;
+        this.button2.visible = false;
+
+        this.ballSprite.visible = true;
+        if(util.randomBool()) {
+            this.ballVelocity *= -1;
+        }
+
+        this.started = true;
+    },
+
     preload: function() {
+        game.load.spritesheet('button1', 'assets/sprites/button1.png', 200, 60, 2);
+        game.load.spritesheet('button2', 'assets/sprites/button2.png', 200, 60, 2);
+
         game.load.image('paddle',  'assets/sprites/paddle.png');
         game.load.image('paddle2', 'assets/sprites/paddle2.png');
         game.load.image('ball',    'assets/sprites/ball.png');
@@ -45,6 +64,9 @@ MainState.prototype = {
         game.scale.pageAlignVertically = true;
         var tileScale = this.tileSize / 8;
 
+        this.button1 = game.add.button(481, 200, 'button1', this.startGame, this, 1, 0, 1);
+        this.button2 = game.add.button(685, 200, 'button2', this.startGame, this, 1, 0, 1);
+
         this.blopp1SFX = game.add.audio('blopp1');
 
         this.paddle1Sprite = game.add.sprite(this.paddle1Position * this.tileSize + this.xOffset, this.yPosition, 'paddle');
@@ -55,6 +77,7 @@ MainState.prototype = {
 
         this.ballSprite = game.add.sprite(this.ballPosition * this.tileSize + this.xOffset, this.yPosition, 'ball');
         this.ballSprite.scale.set(tileScale, tileScale);
+        this.ballSprite.visible = false;
 
         var self = this;
         game.input.keyboard.onDownCallback = function(event) {
@@ -62,23 +85,26 @@ MainState.prototype = {
                 // R restart
                 self.ballPosition = 19;
                 self.ballVelocity = -0.5;
-                self.scoreText.text = "Score: " + self.score;
-                self.scoreText.visible = true;
                 game.stage.backgroundColor = "#FFFFFF";
                 game.state.start('MainState');
+                if(util.randomBool()) {
+                    self.ballVelocity *= -1;
+                }
             }
         };
         this.score1Text = game.add.text(this.xOffset, 0, "0", {font: '56px pixelbug', fill: '#ffffff'});
         this.score2Text = game.add.text(1300, 0, "0", {font: '56px pixelbug', fill: '#ffffff'});
     },
     update: function() {
-        this.ballPosition += this.ballVelocity;
-        this.ballSprite.position.x = this.ballPosition * this.tileSize + this.xOffset;
+        if(this.started) {
+            this.ballPosition += this.ballVelocity;
+            this.ballSprite.position.x = this.ballPosition * this.tileSize + this.xOffset;
 
-        if(this.ballPosition <= this.paddle1Position + 1 ||
-            this.ballPosition >= this.paddle2Position - 1) {
-            this.ballVelocity *= -1;
-            this.blopp1SFX.play();
+            if(this.ballPosition <= this.paddle1Position + 1 ||
+                this.ballPosition >= this.paddle2Position - 1) {
+                this.ballVelocity *= -1;
+                this.blopp1SFX.play();
+            }
         }
     },
 };

@@ -1,11 +1,12 @@
 var util = {
     randomFloat: function(a, b) {
         // returns a random float between a and b
+        // includes a but not b
         var number = Math.random();
-        if(!a) {
+        if(arguments.length == 0) {
             return number;
         }
-        else if(!b) {
+        else if(arguments.length == 1) {
             b = a;
             a = 0;
         }
@@ -16,9 +17,13 @@ var util = {
     },
     randomInt: function(a, b) {
         // returns a random int between a and b
+        // includes a but not b
         var number = util.randomFloat(a, b);
         number = Math.floor(number);
         return number;
+    },
+    randomBool: function() {
+        return util.randomInt(0, 2);
     },
     recentreText: function(text) {
         text.position.x = text.position.x - text.width / 2;
