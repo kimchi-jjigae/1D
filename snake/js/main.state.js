@@ -25,6 +25,7 @@ Apple.prototype = {
         var newPos = util.randomInt(20);
         while(withinSnake(newPos, head, tail)) {
             newPos = util.randomInt(20);
+            console.log(newPos);
         }
         this.position = newPos;
 
@@ -149,10 +150,12 @@ MainState.prototype = {
                 this.blopp.play();
 
                 if(snake.length < this.worldLength) {
+                    console.log('heeej');
                     apple.respawn(snake.position, snake.length, this.worldLength);
                     this.appleBit.position.x = apple.position * this.tileSize + this.xOffset;
                 }
                 else {
+                    console.log('bla');
                     this.appleBit.destroy();
                 }
             }
