@@ -51,9 +51,9 @@ MainState.prototype = {
 
         game.load.audio('blopp1',  'assets/sfx/blopp2.wav');
 
-	    game.load.script('utilScript',          'js/util.js');
-	    game.load.script('directionEnumScript', 'js/direction.enum.js');
-	    game.load.script('keycodesScript',      'js/keycodes.js');
+	    game.load.script('utilScript',          '../js/util.js');
+	    game.load.script('directionEnumScript', '../js/direction.enum.js');
+	    game.load.script('keycodesScript',      '../js/keycodes.js');
         // necessary to preload the font lol
         game.add.text(0, 0, "", {font: '56px pixelbug', fill: '#ffffff'});
     },

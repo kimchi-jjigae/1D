@@ -3,10 +3,10 @@ var util = {
         // returns a random float between a and b
         // includes a but not b
         var number = Math.random();
-        if(arguments.length == 0) {
+        if(a == undefined && b == undefined) {
             return number;
         }
-        else if(arguments.length == 1) {
+        else if(b == undefined) {
             b = a;
             a = 0;
         }
