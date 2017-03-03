@@ -4,56 +4,45 @@ var game = new Phaser.Game(1366, 768, Phaser.AUTO, '', null, false, false);
 
 var MainState = function() {};
 MainState.prototype = {
-    button1: undefined,
-    button2: undefined,
-
-    worldLength: 40,
-    tileSize: 32,
+    worldLength: 20,
+    tileSize: 64,
     xOffset: 43,
     yPosition: (768 / 2) - 32,
+    tileScale: undefined,
 
-    paddle1Position: 0,
-    paddle2Position: 39,
-    ballPosition: 19,
-    ballVelocity: -0.5,
+    timeText: undefined,
+    mineText: undefined,
 
-    paddle1Sprite: undefined,
-    paddle2Sprite: undefined,
-    ballSprite:    undefined,
-
-    score1Text: undefined,
-    score2Text: undefined,
-
-    blopp1SFX: undefined,
     blopp2SFX: undefined,
 
-    started: false,
-    startGame: function() {
-        this.button1.visible = false;
-        this.button2.visible = false;
-
-        this.ballSprite.visible = true;
-        if(util.randomBool()) {
-            this.ballVelocity *= -1;
-        }
-
-        this.started = true;
-    },
+    mineCount: 5,
+    tiles: [],
 
     preload: function() {
-        game.load.spritesheet('button1', 'assets/sprites/button1.png', 200, 60, 2);
-        game.load.spritesheet('button2', 'assets/sprites/button2.png', 200, 60, 2);
+        this.tileScale = this.tileSize / 16;
+        game.load.image('bg',       'assets/sprites/bg.png');
 
-        game.load.image('paddle',  'assets/sprites/paddle.png');
-        game.load.image('paddle2', 'assets/sprites/paddle2.png');
-        game.load.image('ball',    'assets/sprites/ball.png');
-        game.load.image('bg',      'assets/sprites/bg.png');
+        // unclicked
+        game.load.image('flag',     'assets/sprites/flag.png');
+        game.load.image('question', 'assets/sprites/question.png');
 
-        game.load.audio('blopp1',  'assets/sfx/blopp2.wav');
+        // clicked
+        game.load.image('one',      'assets/sprites/one.png');
+        game.load.image('two',      'assets/sprites/two.png');
+        game.load.image('empty',    'assets/sprites/empty.png');
+        game.load.image('mine',     'assets/sprites/mine.png');
+        game.load.image('mine_red', 'assets/sprites/mine_red.png');
+
+        game.load.spritesheet('face',        'assets/sprites/face.png',        16, 16, 4);
+        game.load.spritesheet('tile_button', 'assets/sprites/tile_button.png', 16, 16, 3);
+
+        game.load.audio('blopp2',    'assets/sfx/blopp2.wav');
+        game.load.audio('explosion', 'assets/sfx/explosion.wav');
 
 	    game.load.script('utilScript',          '../js/util.js');
 	    game.load.script('directionEnumScript', '../js/direction.enum.js');
 	    game.load.script('keycodesScript',      '../js/keycodes.js');
+
         // necessary to preload the font lol
         game.add.text(0, 0, "", {font: '56px pixelbug', fill: '#ffffff'});
     },
@@ -62,49 +51,81 @@ MainState.prototype = {
         game.stage.backgroundColor = "#FFFFFF";
         game.scale.pageAlignHorizontally = true;
         game.scale.pageAlignVertically = true;
-        var tileScale = this.tileSize / 8;
 
-        this.button1 = game.add.button(481, 200, 'button1', this.startGame, this, 1, 0, 1);
-        this.button2 = game.add.button(685, 200, 'button2', this.startGame, this, 1, 0, 1);
+        this.blopp2SFX = game.add.audio('blopp2');
+        this.explosionSFX = game.add.audio('explosion');
 
-        this.blopp1SFX = game.add.audio('blopp1');
+        this.faceSprite = game.add.sprite(0 * this.tileSize + this.xOffset, this.yPosition, 'face');
+        this.faceSprite.scale.set(this.tileScale, this.tileScale);
 
-        this.paddle1Sprite = game.add.sprite(this.paddle1Position * this.tileSize + this.xOffset, this.yPosition, 'paddle');
-        this.paddle1Sprite.scale.set(tileScale, tileScale);
+        for(var i = 0; i < this.worldLength; ++i) {
+            this.tiles.push(undefined); // magic numbers omfg
+        }
 
-        this.paddle2Sprite = game.add.sprite(this.paddle2Position * this.tileSize + this.xOffset, this.yPosition, 'paddle2');
-        this.paddle2Sprite.scale.set(tileScale, tileScale);
-
-        this.ballSprite = game.add.sprite(this.ballPosition * this.tileSize + this.xOffset, this.yPosition, 'ball');
-        this.ballSprite.scale.set(tileScale, tileScale);
-        this.ballSprite.visible = false;
-
-        var self = this;
-        game.input.keyboard.onDownCallback = function(event) {
-            if(keycodes.restart.includes(event.key)) {
-                // R restart
-                self.ballPosition = 19;
-                self.ballVelocity = -0.5;
-                game.stage.backgroundColor = "#FFFFFF";
-                game.state.start('MainState');
-                if(util.randomBool()) {
-                    self.ballVelocity *= -1;
-                }
+        // so firstly, we want to work out where all the mines should be placed: 5 of them between position 1 and 39 (0 is the face)
+        var minePositions = [];
+        for(var i = 0; i < this.mineCount; ++i) {
+            var newPos = util.randomInt(1, this.worldLength);
+            while(minePositions.indexOf(newPos) != -1) {
+                newPos = util.randomInt(1, this.worldLength);
             }
-        };
-        this.score1Text = game.add.text(this.xOffset, 0, "0", {font: '56px pixelbug', fill: '#ffffff'});
+            minePositions.push(newPos);
+
+            // add a mine sprite at this position
+            var sprite = game.add.sprite(newPos * this.tileSize + this.xOffset, this.yPosition, 'mine');
+            sprite.scale.set(this.tileScale, this.tileScale);
+
+            this.tiles[newPos] = 'M';
+        }
+
+        // secondly, check what number the other positions should have
+        for(var i = 1; i < this.worldLength; ++i) {
+            if(this.tiles[i] == undefined) {
+                var count = 0;
+                var hej = 0;
+                var hoj = 0;
+
+                if(i != 0)
+                    hej = this.tiles[i - 1] === undefined ? 0 : 1;
+
+                if(i != 39)
+                    hoj = this.tiles[i + 1] === undefined ? 0 : 1;
+
+                count += hej;
+                count += hoj;
+
+                var texture;
+                if(count == 0) {
+                    texture = "empty";
+                    this.tiles[i] = 0;
+                }
+                else if(count == 1) {
+                    texture = "one";
+                    this.tiles[i] = 1;
+                }
+                else if(count == 2) {
+                    texture = "two";
+                    this.tiles[i] = 2;
+                }
+
+                var sprite = game.add.sprite(i * this.tileSize + this.xOffset, this.yPosition, texture);
+                sprite.scale.set(this.tileScale, this.tileScale);
+            }
+        }
+
+        // lastly, cover over all of them with clickable buttons
+        for(var i = 1; i < this.worldLength; ++i) {
+            var button = game.add.button(i * this.tileSize + this.xOffset, this.yPosition, 'tile_button', this.startGame, this, 0, 1, 2);
+            button.scale.set(this.tileScale, this.tileScale);
+        }
+
+        this.mineText = game.add.text(this.xOffset, 0, this.mineCount, {font: '56px pixelbug', fill: '#ffffff'});
+        /*
         this.score2Text = game.add.text(1300, 0, "0", {font: '56px pixelbug', fill: '#ffffff'});
+        */
     },
     update: function() {
         if(this.started) {
-            this.ballPosition += this.ballVelocity;
-            this.ballSprite.position.x = this.ballPosition * this.tileSize + this.xOffset;
-
-            if(this.ballPosition <= this.paddle1Position + 1 ||
-                this.ballPosition >= this.paddle2Position - 1) {
-                this.ballVelocity *= -1;
-                this.blopp1SFX.play();
-            }
         }
     },
 };
