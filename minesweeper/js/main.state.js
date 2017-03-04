@@ -19,6 +19,8 @@ MainState.prototype = {
 
     mineCount: 5,
     tiles: [],
+    buttons: [],
+    hoveredTile: undefined,
 
     preload: function() {
         // allow the player to right click without the menu popping up
@@ -66,7 +68,8 @@ MainState.prototype = {
         this.faceSprite.scale.set(this.tileScale, this.tileScale);
 
         for(var i = 0; i < this.worldLength; ++i) {
-            this.tiles.push(undefined); // magic numbers omfg
+            this.tiles.push(undefined); 
+            this.buttons.push(undefined);
         }
 
         // so firstly, we want to work out where all the mines should be placed: 5 of them between position 1 and 39 (0 is the face)
@@ -92,11 +95,11 @@ MainState.prototype = {
                 var hej = 0;
                 var hoj = 0;
 
-                if(i != 0)
-                    hej = this.tiles[i - 1] === undefined ? 0 : 1;
+                if(i != 1)
+                    hej = this.tiles[i - 1] === 'M' ? 1 : 0;
 
-                if(i != 39)
-                    hoj = this.tiles[i + 1] === undefined ? 0 : 1;
+                if(i != 19)
+                    hoj = this.tiles[i + 1] === 'M' ? 1 : 0;
 
                 count += hej;
                 count += hoj;
@@ -122,8 +125,9 @@ MainState.prototype = {
 
         // lastly, cover over all of them with clickable buttons
         for(var i = 1; i < this.worldLength; ++i) {
-            var button = game.add.button(i * this.tileSize + this.xOffset, this.yPosition, 'tile_button', this.startGame, this, 0, 1, 2);
+            var button = game.add.button(i * this.tileSize + this.xOffset, this.yPosition, 'tile_button', this.checkClickButton, this, 0, 1, 2);
             button.scale.set(this.tileScale, this.tileScale);
+            this.buttons[i] = button;
         }
 
         this.mineText = game.add.text(this.xOffset, 0, this.mineCount, {font: '56px pixelbug', fill: '#ffffff'});
@@ -134,6 +138,70 @@ MainState.prototype = {
         var secondsElapsed = (Date.now() - this.startTime) / 1000;
         this.timeText.text = Math.floor(secondsElapsed);
         util.rightAlignText(this.timeText, 1366 - this.xOffset);
+        
+        this.checkMouseInput();
+    },
+    checkMouseInput: function() {
+        if(game.input.activePointer.leftButton.isDown) {
+        }
+        else if(game.input.activePointer.leftButton.isUp) {
+        }
+
+        if(game.input.activePointer.rightButton.isDown) {
+        }
+        else if(game.input.activePointer.rightButton.isUp) {
+        }
+    },
+    checkClickButton: function() {
+        var index = (game.input.mousePointer.x - this.xOffset) / this.tileSize;
+        index = Math.floor(index);
+        this.checkClick(index);
+    },
+    checkClick: function(index, direction) {
+        this.buttons[index].visible = false;
+        var tile = this.tiles[index];
+
+        if(tile == 'M') {
+            this.lose(index);
+        }
+        else if(tile == 0) {
+            if(index != 1) {
+                var newIndex = index - 1;
+                var newTile = this.tiles[newIndex];
+                this.buttons[newIndex].visible = false;
+                while(newTile != 'M' && newIndex != 0) {
+                    this.buttons[newIndex].visible = false;
+                    --newIndex;
+                    newTile = this.tiles[newIndex];
+                }
+            }
+
+            if(index != 19) {
+                var newIndex = index + 1;
+                var newTile = this.tiles[newIndex];
+                this.buttons[newIndex].visible = false;
+                while(newTile != 'M' && newIndex != 20) {
+                    this.buttons[newIndex].visible = false;
+                    ++newIndex;
+                    newTile = this.tiles[newIndex];
+                }
+            }
+            this.blopp2SFX.play();
+        }
+        else if(tile == 1 || tile == 2) {
+            this.blopp2SFX.play();
+        }
+    },
+    lose: function(index) {
+        for(let button of this.buttons) {
+            if(button != undefined) {
+                button.visible = false;
+            }
+        }
+
+        var red = game.add.sprite(index * this.tileSize + this.xOffset, this.yPosition, 'mine_red');
+        red.scale.set(this.tileScale, this.tileScale);
+        this.explosionSFX.play();
     },
 };
 
