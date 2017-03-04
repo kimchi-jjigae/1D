@@ -181,7 +181,8 @@ MainState.prototype = {
             // hack to disable button right click
             for(let button of this.buttons) {
                 if(button != undefined) {
-                    button.inputEnabled = true;
+                    if(button.inputEnabled2) // more hacks lol
+                        button.inputEnabled = true;
                 }
             }
             if(this.rightWasDown) {
@@ -240,8 +241,11 @@ MainState.prototype = {
                 sprite.scale.set(this.tileScale, this.tileScale);
                 this.flags[index] = sprite;
                 --this.flagCount;
+                console.log('hi');
+                console.log(this.buttons[index].inputEnabled);
                 this.buttons[index].inputEnabled = false;
-                console.log(this.buttons[index]);
+                this.buttons[index].inputEnabled2 = false; // hacks h4x h4ck0rz
+                console.log(this.buttons[index].inputEnabled);
             }
             else if(flag.key == 'flag') {
                 flag.destroy();
@@ -254,6 +258,7 @@ MainState.prototype = {
                 flag.destroy();
                 this.flags[index] = undefined;
                 this.buttons[index].inputEnabled = true;
+                this.buttons[index].inputEnabled2 = true;
             }
         }
     },
