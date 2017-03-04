@@ -22,6 +22,7 @@ MainState.prototype = {
     flagCount: 5,
     tiles: [],
     buttons: [],
+    flags: [],
     hoveredTile: undefined,
     faceSprite: undefined,
 
@@ -166,8 +167,20 @@ MainState.prototype = {
         }
 
         if(game.input.activePointer.rightButton.isDown) {
+            // hack to disable button right click
+            for(let button of this.buttons) {
+                if(button != undefined) {
+                    button.inputEnabled = false;
+                }
+            }
         }
         else if(game.input.activePointer.rightButton.isUp) {
+            // hack to disable button right click
+            for(let button of this.buttons) {
+                if(button != undefined) {
+                    button.inputEnabled = true;
+                }
+            }
         }
     },
     checkClickButton: function() {
