@@ -10,6 +10,8 @@ MainState.prototype = {
     yPosition: (768 / 2) - 32,
     tileScale: undefined,
 
+    startTime: undefined,
+
     timeText: undefined,
     mineText: undefined,
 
@@ -19,6 +21,11 @@ MainState.prototype = {
     tiles: [],
 
     preload: function() {
+        // allow the player to right click without the menu popping up
+        game.canvas.oncontextmenu = function (e) { e.preventDefault(); }
+
+        this.startTime = Date.now();
+
         this.tileScale = this.tileSize / 16;
         game.load.image('bg',       'assets/sprites/bg.png');
 
@@ -120,13 +127,13 @@ MainState.prototype = {
         }
 
         this.mineText = game.add.text(this.xOffset, 0, this.mineCount, {font: '56px pixelbug', fill: '#ffffff'});
-        /*
-        this.score2Text = game.add.text(1300, 0, "0", {font: '56px pixelbug', fill: '#ffffff'});
-        */
+        this.timeText = game.add.text(1366 - this.xOffset, 0, "0", {font: '56px pixelbug', fill: '#ffffff'});
     },
     update: function() {
-        if(this.started) {
-        }
+        this.mineText.text = this.mineCount;
+        var secondsElapsed = (Date.now() - this.startTime) / 1000;
+        this.timeText.text = Math.floor(secondsElapsed);
+        util.rightAlignText(this.timeText, 1366 - this.xOffset);
     },
 };
 

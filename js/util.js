@@ -28,5 +28,11 @@ var util = {
     recentreText: function(text) {
         text.position.x = text.position.x - text.width / 2;
         text.position.y = text.position.y - text.height / 2;
+    },
+    rightAlignText: function(text, rightBoundary) {
+        if(rightBoundary == undefined)
+            text.position.x = text.position.x - text.width;
+        else
+            text.position.x = rightBoundary - text.width;
     }
 };
