@@ -3,5 +3,7 @@
 var keycodes = {
     left  :  ['a', 'ArrowLeft'],
     right :  ['d', 'ArrowRight'], 
-    restart: ['r']
+    restart: ['r'],
+    down:    ['s', 'ArrowDown'],
+    space:   ['Spacebar'],
 };
