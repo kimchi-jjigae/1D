@@ -19,6 +19,7 @@ MainState.prototype = {
     blopp2SFX: undefined,
 
     mineCount: 5,
+    flagCount: 5,
     tiles: [],
     buttons: [],
     hoveredTile: undefined,
@@ -88,6 +89,13 @@ MainState.prototype = {
             sprite.scale.set(this.tileScale, this.tileScale);
 
             this.tiles[newPos] = 'M';
+            /* debug
+            this.tiles[1] = 'M';
+            this.tiles[2] = 'M';
+            this.tiles[3] = 'M';
+            this.tiles[4] = 'M';
+            this.tiles[5] = 'M';
+            */
         }
 
         // secondly, check what number the other positions should have
@@ -132,25 +140,29 @@ MainState.prototype = {
             this.buttons[i] = button;
         }
 
-        this.mineText = game.add.text(this.xOffset, 0, this.mineCount, {font: '56px pixelbug', fill: '#ffffff'});
+        this.mineText = game.add.text(this.xOffset, 0, this.flagCount, {font: '56px pixelbug', fill: '#ffffff'});
         this.timeText = game.add.text(1366 - this.xOffset, 0, "0", {font: '56px pixelbug', fill: '#ffffff'});
     },
     update: function() {
         if(!this.gameover) {
-            this.mineText.text = this.mineCount;
+            this.mineText.text = this.flagCount;
             var secondsElapsed = (Date.now() - this.startTime) / 1000;
             this.timeText.text = Math.floor(secondsElapsed);
             util.rightAlignText(this.timeText, 1366 - this.xOffset);
             
             this.checkMouseInput();
+
+            if(this.checkWin()) {
+                this.win();
+            }
         }
     },
     checkMouseInput: function() {
         if(game.input.activePointer.leftButton.isDown) {
-            this.faceSprite.frame = 1;
+            this.faceSprite.frame = 1; // :o
         }
         else if(game.input.activePointer.leftButton.isUp) {
-            this.faceSprite.frame = 0;
+            this.faceSprite.frame = 0; // :)
         }
 
         if(game.input.activePointer.rightButton.isDown) {
@@ -198,6 +210,26 @@ MainState.prototype = {
             this.blopp2SFX.play();
         }
     },
+    checkWin: function() {
+        var visibleCount = 0;
+        for(let button of this.buttons) {
+            if(button != undefined) {
+                if(button.visible == true)
+                    ++visibleCount;
+            }
+        }
+        return visibleCount == this.mineCount;
+    },
+    win: function() {
+        this.mineText.text = 0;
+        for(let button of this.buttons) {
+            if(button != undefined) {
+                button.inputEnabled = false;
+            }
+        }
+        this.faceSprite.frame = 3; // B)
+        this.gameover = true;
+    },
     lose: function(index) {
         for(let button of this.buttons) {
             if(button != undefined) {
@@ -208,7 +240,7 @@ MainState.prototype = {
         var red = game.add.sprite(index * this.tileSize + this.xOffset, this.yPosition, 'mine_red');
         red.scale.set(this.tileScale, this.tileScale);
         this.explosionSFX.play();
-        this.faceSprite.frame = 2;
+        this.faceSprite.frame = 2; // x(
 
         this.gameover = true;
     },
