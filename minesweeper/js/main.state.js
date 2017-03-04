@@ -11,6 +11,7 @@ MainState.prototype = {
     tileScale: undefined,
 
     startTime: undefined,
+    gameover: false,
 
     timeText: undefined,
     mineText: undefined,
@@ -21,6 +22,7 @@ MainState.prototype = {
     tiles: [],
     buttons: [],
     hoveredTile: undefined,
+    faceSprite: undefined,
 
     preload: function() {
         // allow the player to right click without the menu popping up
@@ -134,17 +136,21 @@ MainState.prototype = {
         this.timeText = game.add.text(1366 - this.xOffset, 0, "0", {font: '56px pixelbug', fill: '#ffffff'});
     },
     update: function() {
-        this.mineText.text = this.mineCount;
-        var secondsElapsed = (Date.now() - this.startTime) / 1000;
-        this.timeText.text = Math.floor(secondsElapsed);
-        util.rightAlignText(this.timeText, 1366 - this.xOffset);
-        
-        this.checkMouseInput();
+        if(!this.gameover) {
+            this.mineText.text = this.mineCount;
+            var secondsElapsed = (Date.now() - this.startTime) / 1000;
+            this.timeText.text = Math.floor(secondsElapsed);
+            util.rightAlignText(this.timeText, 1366 - this.xOffset);
+            
+            this.checkMouseInput();
+        }
     },
     checkMouseInput: function() {
         if(game.input.activePointer.leftButton.isDown) {
+            this.faceSprite.frame = 1;
         }
         else if(game.input.activePointer.leftButton.isUp) {
+            this.faceSprite.frame = 0;
         }
 
         if(game.input.activePointer.rightButton.isDown) {
@@ -202,6 +208,9 @@ MainState.prototype = {
         var red = game.add.sprite(index * this.tileSize + this.xOffset, this.yPosition, 'mine_red');
         red.scale.set(this.tileScale, this.tileScale);
         this.explosionSFX.play();
+        this.faceSprite.frame = 2;
+
+        this.gameover = true;
     },
 };
 
