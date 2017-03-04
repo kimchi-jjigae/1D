@@ -9,6 +9,7 @@ MainState.prototype = {
     xOffset: 43,
     yPosition: (768 / 2) - 32,
     tileScale: undefined,
+    rightWasDown: false,
 
     startTime: undefined,
     gameover: false,
@@ -74,6 +75,7 @@ MainState.prototype = {
         for(var i = 0; i < this.worldLength; ++i) {
             this.tiles.push(undefined); 
             this.buttons.push(undefined);
+            this.flags.push(undefined);
         }
 
         // so firstly, we want to work out where all the mines should be placed: 5 of them between position 1 and 39 (0 is the face)
@@ -167,6 +169,7 @@ MainState.prototype = {
         }
 
         if(game.input.activePointer.rightButton.isDown) {
+            this.rightWasDown = true;
             // hack to disable button right click
             for(let button of this.buttons) {
                 if(button != undefined) {
@@ -180,6 +183,10 @@ MainState.prototype = {
                 if(button != undefined) {
                     button.inputEnabled = true;
                 }
+            }
+            if(this.rightWasDown) {
+                this.rightClick();
+                this.rightWasDown = false;
             }
         }
     },
@@ -223,6 +230,33 @@ MainState.prototype = {
             this.blopp2SFX.play();
         }
     },
+    rightClick: function() {
+        var index = (game.input.mousePointer.x - this.xOffset) / this.tileSize;
+        index = Math.floor(index);
+        if(this.buttons[index].visible) {
+            var flag = this.flags[index];
+            if(flag == undefined) {
+                var sprite = game.add.sprite(index * this.tileSize + this.xOffset, this.yPosition, 'flag');
+                sprite.scale.set(this.tileScale, this.tileScale);
+                this.flags[index] = sprite;
+                --this.flagCount;
+                this.buttons[index].inputEnabled = false;
+                console.log(this.buttons[index]);
+            }
+            else if(flag.key == 'flag') {
+                flag.destroy();
+                var sprite = game.add.sprite(index * this.tileSize + this.xOffset, this.yPosition, 'question');
+                sprite.scale.set(this.tileScale, this.tileScale);
+                this.flags[index] = sprite;
+                ++this.flagCount;
+            }
+            else if(flag.key == 'question') {
+                flag.destroy();
+                this.flags[index] = undefined;
+                this.buttons[index].inputEnabled = true;
+            }
+        }
+    },
     checkWin: function() {
         var visibleCount = 0;
         for(let button of this.buttons) {
@@ -247,6 +281,11 @@ MainState.prototype = {
         for(let button of this.buttons) {
             if(button != undefined) {
                 button.visible = false;
+            }
+        }
+        for(let flag of this.flags) {
+            if(flag != undefined) {
+                flag.visible = false;
             }
         }
 
