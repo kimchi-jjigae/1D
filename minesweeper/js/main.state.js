@@ -46,6 +46,7 @@ MainState.prototype = {
         game.load.image('empty',    'assets/sprites/empty.png');
         game.load.image('mine',     'assets/sprites/mine.png');
         game.load.image('mine_red', 'assets/sprites/mine_red.png');
+        game.load.image('wrong',    'assets/sprites/wrong.png');
 
         game.load.spritesheet('face',        'assets/sprites/face.png',        16, 16, 4);
         game.load.spritesheet('tile_button', 'assets/sprites/tile_button.png', 16, 16, 3);
@@ -92,13 +93,6 @@ MainState.prototype = {
             sprite.scale.set(this.tileScale, this.tileScale);
 
             this.tiles[newPos] = 'M';
-            /* debug
-            this.tiles[1] = 'M';
-            this.tiles[2] = 'M';
-            this.tiles[3] = 'M';
-            this.tiles[4] = 'M';
-            this.tiles[5] = 'M';
-            */
         }
 
         // secondly, check what number the other positions should have
@@ -141,6 +135,7 @@ MainState.prototype = {
             var button = game.add.button(i * this.tileSize + this.xOffset, this.yPosition, 'tile_button', this.checkClickButton, this, 0, 1, 2);
             button.scale.set(this.tileScale, this.tileScale);
             this.buttons[i] = button;
+            button.inputEnabled2 = true;
         }
 
         this.mineText = game.add.text(this.xOffset, 0, this.flagCount, {font: '56px pixelbug', fill: '#ffffff'});
@@ -241,11 +236,8 @@ MainState.prototype = {
                 sprite.scale.set(this.tileScale, this.tileScale);
                 this.flags[index] = sprite;
                 --this.flagCount;
-                console.log('hi');
-                console.log(this.buttons[index].inputEnabled);
                 this.buttons[index].inputEnabled = false;
                 this.buttons[index].inputEnabled2 = false; // hacks h4x h4ck0rz
-                console.log(this.buttons[index].inputEnabled);
             }
             else if(flag.key == 'flag') {
                 flag.destroy();
@@ -288,9 +280,14 @@ MainState.prototype = {
                 button.visible = false;
             }
         }
-        for(let flag of this.flags) {
+        for(var i = 1; i < this.flags.length; ++i) {
+            var flag = this.flags[i];
             if(flag != undefined) {
                 flag.visible = false;
+                if(flag.key == 'flag' && this.tiles[i] != 'M') {
+                    var sprite = game.add.sprite(i * this.tileSize + this.xOffset, this.yPosition, 'wrong');
+                    sprite.scale.set(this.tileScale, this.tileScale);
+                }
             }
         }
 
