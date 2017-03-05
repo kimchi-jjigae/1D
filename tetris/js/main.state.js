@@ -8,9 +8,9 @@ MainState.prototype = {
     worldHeight: 20,
     tileSize: 32,
     yOffset: 64,
-    xPosition: (1366 / 2) - 16,
+    xPosition: 400 - 16,
 
-    tickRate: 300,
+    tickRate: 500,
     lastTicked: Date.now(),
     tetrising: false,
 
@@ -18,10 +18,14 @@ MainState.prototype = {
     linePos: 0,
 
     tetrisSFX: undefined,
+    blippSFX: undefined,
     flashRate: 200,
     lastFlashed: Date.now(),
+    flashes: 6,
+    maxFlashes: 6,
 
     score: 0,
+    scoreThreshold: 2000,
     level: 1,
     scoreText: undefined,
     levelText: undefined,
@@ -31,12 +35,13 @@ MainState.prototype = {
         game.load.image('bg', 'assets/sprites/bg.png');
         game.load.spritesheet('block', 'assets/sprites/block.png', 16, 64, 2);
 
-        game.load.audio('tetris', 'assets/sfx/gameover.wav');
+        game.load.audio('blipp', 'assets/sfx/blip.wav');
+        game.load.audio('tetris', 'assets/sfx/blarp.wav');
 
 	    game.load.script('utilScript',          '../js/util.js');
 	    game.load.script('directionEnumScript', '../js/direction.enum.js');
 	    game.load.script('keycodesScript',      '../js/keycodes.js');
-        game.add.text(0, 0, "", {font: '56px pixelbug', fill: '#ffffff'});
+        game.add.text(0, 0, "", {font: '32px pixelbug', fill: '#ffffff'});
     },
     create: function() {
         game.add.sprite(0, 0, 'bg');
@@ -45,52 +50,44 @@ MainState.prototype = {
         var tileScale = this.tileSize / 16;
 
         this.tetrisSFX = game.add.audio('tetris');
+        this.blippSFX = game.add.audio('blipp');
 
         this.linePiece = game.add.sprite(this.xPosition, this.linePos * this.tileSize + this.yOffset, 'block');
         this.linePiece.scale.set(tileScale, tileScale);
 
         var self = this;
         game.input.keyboard.onDownCallback = function(event) {
-            if(keycodes.down.includes(event.key)) {
-                self.lastTicked = 0;
-            }
-            else if(keycodes.space.includes(event.key)) {
+            if(!self.tetrising) {
+                if(keycodes.down.includes(event.key)) {
+                    self.lastTicked = 0;
+                }
+                else if(keycodes.up.includes(event.key) ||
+                    keycodes.space.includes(event.key)) {
+                    self.lastTicked = 0;
+                    self.linePos = self.worldHeight - 5;
+
+                    self.tetrisSFX.play();
+                }
             }
         };
-        this.scoreText = game.add.text(50, 80, "Score: 0", {font: '56px pixelbug', fill: '#ffffff'});
-        this.levelText = game.add.text(50, 160, "Level: 1", {font: '56px pixelbug', fill: '#ffffff'});
-        this.nextPieceText = game.add.text(50, 220, "Next piece:", {font: '56px pixelbug', fill: '#ffffff'});
+        this.scoreText = game.add.text(50, 80, "Score: 0", {font: '32px pixelbug', fill: '#ffffff'});
+        this.levelText = game.add.text(50, 120, "Level: 1", {font: '32px pixelbug', fill: '#ffffff'});
+        this.nextPieceText = game.add.text(50, 160, "Next piece:", {font: '32px pixelbug', fill: '#ffffff'});
         game.stage.smoothed = false;
+
+        var sprite = game.add.sprite(70, 220, 'block');
+        sprite.scale.set(tileScale, tileScale);
     },
     update: function() {
         if(this.timeToTick() && !this.tetrising) {
+            this.blippSFX.play();
             ++this.linePos;
             this.linePiece.position.y = this.linePos * this.tileSize + this.yOffset;
 
             this.checkTetris();
-
-            /*
-            if(this.eatApple()) {
-                this.score++;
-                this.scoreText.text = "Score: " + this.score;
-
-                snake.grow();
-                var tileScale = this.tileSize / 16;
-                var pos = (snake.position - snake.length + 1) % this.worldLength;
-                var bit = this.snakeBits.create(pos * this.tileSize + this.xOffset, this.yPosition, 'snake');
-                bit.scale.set(tileScale, tileScale);
-
-                this.blopp.play();
-
-                if(snake.length < this.worldLength) {
-                    apple.respawn(snake.position, snake.length, this.worldLength);
-                    this.appleBit.position.x = apple.position * this.tileSize + this.xOffset;
-                }
-                else {
-                    this.appleBit.destroy();
-                }
+            if(this.tetrising) {
+                this.tetrisSFX.play();
             }
-            */
         }
         else if(this.tetrising) {
             this.tetris();
@@ -105,14 +102,33 @@ MainState.prototype = {
         return itIsTime;
     },
     checkTetris: function() {
-        this.tetrising = this.linePos == this.worldHeight - 4;
+        this.tetrising = this.linePos >= this.worldHeight - 4;
     },
     tetris: function() {
-        //this.tetrisSFX.play();
         if(Date.now() - this.lastFlashed > this.flashRate) {
             var frame = this.linePiece.frame;
             this.linePiece.frame = frame == 0 ? 1 : 0;
             this.lastFlashed = Date.now();
+            --this.flashes;
+        }
+        if(this.flashes <= 0) {
+            this.lastTicked = Date.now();
+            this.tetrising = false;
+            this.flashes = this.maxFlashes;
+
+            this.score += 800;
+            this.scoreText.text = "Score: " + this.score;
+
+            var oldLevel = this.level;
+            this.level = Math.floor(this.score / this.scoreThreshold) + 1; 
+            this.levelText.text = "Level: " + this.level;
+            if(this.level != oldLevel) {
+                this.tickRate -= 20;
+                if(this.tickRate <= 50)
+                    this.tickRate = 50;
+            }
+
+            this.linePos = -1;
         }
     }
 };
