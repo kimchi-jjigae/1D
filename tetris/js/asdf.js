@@ -10,4 +10,4 @@ i.scale.set(e,e)},update:function(){this.timeToTick()&&!this.tetrising?(this.bli
 return Date.now()-this.lastTicked>=this.tickRate&&(this.lastTicked=Date.now(),e=!0),e},checkTetris:function(){this.tetrising=this.linePos>=this.worldHeight-4},tetris:function(){if(Date.now()-this.lastFlashed>this.flashRate){var e=this.linePiece.frame
 this.linePiece.frame=0==e?1:0,this.lastFlashed=Date.now(),--this.flashes}if(this.flashes<=0){this.lastTicked=Date.now(),this.tetrising=!1,this.flashes=this.maxFlashes,this.score+=800,this.scoreText.text="Score: "+this.score
 var t=this.level
-this.level=Math.floor(this.score/this.scoreThreshold)+1,this.levelText.text="Level: "+this.level,this.level!=t&&(this.tickRate-=20,this.tickRate<=50&&(this.tickRate=50)),this.linePos=-1}}},game.state.add("MainState",MainState),game.state.start("MainState")
+this.level=Math.floor(this.score/this.scoreThreshold)+1,this.levelText.text="Level: "+this.level,this.level!=t&&(this.tickRate-=20,this.tickRate<=20&&(this.tickRate=20)),this.linePos=-1}}},game.state.add("MainState",MainState),game.state.start("MainState")
