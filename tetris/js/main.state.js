@@ -124,8 +124,8 @@ MainState.prototype = {
             this.levelText.text = "Level: " + this.level;
             if(this.level != oldLevel) {
                 this.tickRate -= 20;
-                if(this.tickRate <= 50)
-                    this.tickRate = 50;
+                if(this.tickRate <= 20)
+                    this.tickRate = 20;
             }
 
             this.linePos = -1;
