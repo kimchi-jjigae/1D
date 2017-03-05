@@ -166,20 +166,20 @@ MainState.prototype = {
         if(game.input.activePointer.rightButton.isDown) {
             this.rightWasDown = true;
             // hack to disable button right click
-            for(let button of this.buttons) {
+            this.buttons.forEach(function(button) {
                 if(button != undefined) {
                     button.inputEnabled = false;
                 }
-            }
+            });
         }
         else if(game.input.activePointer.rightButton.isUp) {
             // hack to disable button right click
-            for(let button of this.buttons) {
+            this.buttons.forEach(function(button) {
                 if(button != undefined) {
                     if(button.inputEnabled2) // more hacks lol
                         button.inputEnabled = true;
                 }
-            }
+            });
             if(this.rightWasDown) {
                 this.rightClick();
                 this.rightWasDown = false;
@@ -256,30 +256,30 @@ MainState.prototype = {
     },
     checkWin: function() {
         var visibleCount = 0;
-        for(let button of this.buttons) {
+        this.buttons.forEach(function(button) {
             if(button != undefined) {
                 if(button.visible == true)
                     ++visibleCount;
             }
-        }
+        });
         return visibleCount == this.mineCount;
     },
     win: function() {
         this.mineText.text = 0;
-        for(let button of this.buttons) {
+        this.buttons.forEach(function(button) {
             if(button != undefined) {
                 button.inputEnabled = false;
             }
-        }
+        });
         this.faceSprite.frame = 3; // B)
         this.gameover = true;
     },
     lose: function(index) {
-        for(let button of this.buttons) {
+        this.buttons.forEach(function(button) {
             if(button != undefined) {
                 button.visible = false;
             }
-        }
+        });
         for(var i = 1; i < this.flags.length; ++i) {
             var flag = this.flags[i];
             if(flag != undefined) {
