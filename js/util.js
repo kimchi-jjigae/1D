@@ -25,9 +25,15 @@ var util = {
     randomBool: function() {
         return util.randomInt(0, 2);
     },
-    recentreText: function(text) {
-        text.position.x = text.position.x - text.width / 2;
-        text.position.y = text.position.y - text.height / 2;
+    recentreText: function(text, position) {
+        if(position == undefined) {
+            text.position.x = text.position.x - text.width / 2;
+            text.position.y = text.position.y - text.height / 2;
+        }
+        else {
+            text.position.x = position.x - text.width / 2;
+            text.position.y = position.y - text.height / 2;
+        }
     },
     rightAlignText: function(text, rightBoundary) {
         if(rightBoundary == undefined)
