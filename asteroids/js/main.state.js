@@ -1,4 +1,5 @@
 'use strict';
+// lol don't judge I wrote this as quickly as I could
 
 var game = new Phaser.Game(1366, 768, Phaser.AUTO, '', null, false, false);
 
@@ -6,7 +7,7 @@ var Ship = function() {};
 Ship.prototype = {
     speed: 0,
     acceleration: 0.05,
-    position: 0,
+    position: 43,
     move: function() {
         this.position += this.speed;
     },
@@ -22,9 +23,21 @@ Ship.prototype = {
     }
 };
 
-var Asteroid = function(position, velocity) {
+var Asteroid = function(position, velocity, type) {
+    this.type = type || 'asteroid_l';
+    this.sprite = undefined;
     this.position = position;
     this.velocity = velocity;
+    this.yOffset = 32;
+    if(this.type == 'asteroid_l') {
+        this.radius = 7;
+    }
+    else if(this.type == 'asteroid_m') {
+        this.radius = 4.5;
+    }
+    else if(this.type == 'asteroid_s') {
+        this.radius = 2.5;
+    }
 };
 Asteroid.prototype = {
     move: function() {
@@ -32,12 +45,13 @@ Asteroid.prototype = {
     },
     update: function() {
         this.move();
+        this.sprite.position.x = this.position;
     }
 };
 
 var ship = new Ship();
 var asteroids = [
-    new Asteroid(800, -1)
+    new Asteroid(1000, -1),
 ]
 
 var MainState = function() {};
@@ -57,6 +71,7 @@ MainState.prototype = {
     shootRate: 250, // time must pass between shots
     shootLast: 0,
     bullets: [],
+    bulletSpeed: 5,
 
     preload: function() {
         // allow the player to right click without the menu popping up
@@ -101,12 +116,21 @@ MainState.prototype = {
         this.thrustSprite.scale.set(this.tileScale, this.tileScale);
         this.thrustSprite.visible = false;
 
+        asteroids.forEach(function(asteroid) {
+            var asteroidSprite = game.add.sprite(asteroid.position, self.yPosition + asteroid.yOffset, asteroid.type);
+            asteroidSprite.scale.set(self.tileScale, self.tileScale);
+            asteroidSprite.anchor.setTo(0.5, 0.5);
+            asteroidSprite.angle = util.randomInt(-180, 180);
+            asteroid.sprite = asteroidSprite;
+        })
+
         game.input.keyboard.onDownCallback = function(event) {
             if(keycodes.right.includes(event.key) || keycodes.up.includes(event.key)) {
                 self.thrusting = true;
             }
             if(keycodes.space.includes(event.key)) {
-                if(self.mayShoot) {
+                if(self.mayShoot()) {
+                    self.shoot();
                 }
             }
             else if(keycodes.restart.includes(event.key)) {
@@ -125,7 +149,7 @@ MainState.prototype = {
     update: function() {
         if(!this.gameover) {
             ship.update();
-            this.shipSprite.position.x = ship.position + this.xOffset;
+            this.shipSprite.position.x = ship.position;
             if(this.thrusting) {
                 this.thrustSprite.position.x = this.shipSprite.position.x - 64;
                 this.thrustSprite.visible = true;
@@ -135,6 +159,11 @@ MainState.prototype = {
             else {
                 this.thrustSprite.visible = false;
             }
+
+            this.updateBullets();
+            this.updateAsteroids();
+            this.updateCollisions();
+
             if(this.checkWin()) {
                 this.win();
             }
@@ -145,22 +174,95 @@ MainState.prototype = {
     },
     mayShoot: function() {
         var ja = false;
-        if(Date.now() - this.shootLast >= this.ShootRate) {
+        if(Date.now() - this.shootLast >= this.shootRate) {
             this.shootLast = Date.now();
             ja = true;
         }
         return ja;
     },
     shoot: function() {
+        var bullet = game.add.sprite(ship.position + 60, this.yPosition + 28, 'bullet');
+        bullet.scale.set(this.tileScale, this.tileScale);
+        this.bullets.push(bullet);
+        this.shootSFX.play();
     },
-    checkBulletCollisions: function() {
-        this.bullets.forEach(function(bullet) {
-            asteroids.forEach(function(asteroid) {
-                //if(m
-            })
+    updateAsteroids: function() {
+        var self = this;
+        asteroids.forEach(function(asteroid) {
+            asteroid.update();
         })
     },
+    updateBullets: function() {
+        var self = this;
+        this.bullets.forEach(function(bullet) {
+            bullet.position.x += self.bulletSpeed;
+            if(bullet.position.x > 1500) {
+                // clear
+            }
+        })
+    },
+    checkBulletCollisions: function() {
+        var asteroidsToDestroy = [];
+        this.bullets.forEach(function(bullet) {
+            asteroids.forEach(function(asteroid) {
+                if(bullet.x + 2 > asteroid.position - asteroid.radius) {
+                    asteroidsToDestroy.push(asteroid);
+                    bullet.destroy();
+                }
+            })
+        })
+        asteroidsToDestroy.forEach(function(asteroid) {
+            if(asteroid.type == 'asteroid_l') {
+                var a_1 = new Asteroid(asteroid.position, -1);
+                var sprite1 = game.add.sprite(asteroid.position, self.yPosition + asteroid.yOffset, 'asteroid_m');
+                sprite1.scale.set(self.tileScale, self.tileScale);
+                sprite1.anchor.setTo(0.5, 0.5);
+                sprite1.angle = util.randomInt(-180, 180);
+                a_1.sprite = sprite1;
+
+                var a_2 = new Asteroid(asteroid.position, 1);
+                var sprite2 = game.add.sprite(asteroid.position, self.yPosition + asteroid.yOffset, 'asteroid_m');
+                sprite2.scale.set(self.tileScale, self.tileScale);
+                sprite2.anchor.setTo(0.5, 0.5);
+                sprite2.angle = util.randomInt(-180, 180);
+                a_2.sprite = sprite2;
+
+                asteroids.push(a_1)
+                asteroids.push(a_2)
+            }
+            else if(asteroid.type == 'asteroid_m') {
+                var a_1 = new Asteroid(asteroid.position, -1);
+                var sprite1 = game.add.sprite(asteroid.position, self.yPosition + asteroid.yOffset, 'asteroid_s');
+                sprite1.scale.set(self.tileScale, self.tileScale);
+                sprite1.anchor.setTo(0.5, 0.5);
+                sprite1.angle = util.randomInt(-180, 180);
+                a_1.sprite = sprite1;
+
+                var a_2 = new Asteroid(asteroid.position, 1);
+                var sprite2 = game.add.sprite(asteroid.position, self.yPosition + asteroid.yOffset, 'asteroid_s');
+                sprite2.scale.set(self.tileScale, self.tileScale);
+                sprite2.anchor.setTo(0.5, 0.5);
+                sprite2.angle = util.randomInt(-180, 180);
+                a_2.sprite = sprite2;
+
+                asteroids.push(a_1)
+                asteroids.push(a_2)
+            }
+            else if(asteroid.type == 'asteroid_s') {
+                this.asteroidsDestroyed++;
+            }
+            asteroid.sprite.destroy();
+            var index = asteroids.indexOf(asteroid);
+            asteroids.splice(index, 1);
+            this.explosionSFX.play();
+        })
+        asteroidsToDestroy = [];
+    },
     checkShipCollisions: function() {
+    },
+    updateCollisions: function() {
+        this.checkBulletCollisions();
+        this.checkShipCollisions();
     },
     checkLose: function() {
         return this.shipDestroyed;
