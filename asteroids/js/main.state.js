@@ -96,8 +96,8 @@ MainState.prototype = {
         // necessary to preload the font lol
         game.add.text(0, 0, "", {font: '56px pixelbug', fill: '#ffffff'});
     },
-    createAsteroidSprite: function(position, yOffset, type) {
-        var asteroidSprite = game.add.sprite(position, this.yPosition + yOffset, type);
+    createAsteroidSprite: function(xPosition, yOffset, type) {
+        var asteroidSprite = game.add.sprite(xPosition, this.yPosition + yOffset, type);
         asteroidSprite.scale.set(this.tileScale, this.tileScale);
         asteroidSprite.anchor.setTo(0.5, 0.5);
         asteroidSprite.angle = util.randomInt(-180, 180);
@@ -207,31 +207,32 @@ MainState.prototype = {
     checkBulletCollisions: function() {
         var self = this;
         var asteroidsToDestroy = [];
+        var bulletsToDestroy = [];
         this.bullets.forEach(function(bullet) {
             asteroids.forEach(function(asteroid) {
                 if(bullet.x + 2 > asteroid.position - asteroid.radius) {
                     asteroidsToDestroy.push(asteroid);
-                    bullet.destroy();
+                    bulletsToDestroy.push(bullet);
                 }
             })
         })
         asteroidsToDestroy.forEach(function(asteroid) {
             if(asteroid.type == 'asteroid_l') {
-                var a_1 = new Asteroid(asteroid.position, -1);
+                var a_1 = new Asteroid(asteroid.position, -1, 'asteroid_m');
                 a_1.sprite = self.createAsteroidSprite(a_1.position, a_1.yOffset, 'asteroid_m');
 
                 var a_2 = new Asteroid(asteroid.position, 1);
-                a_2.sprite = self.createAsteroidSprite(a_1.position, a_1.yOffset, 'asteroid_m');
+                a_2.sprite = self.createAsteroidSprite(a_2.position, a_2.yOffset, 'asteroid_m');
 
                 asteroids.push(a_1)
                 asteroids.push(a_2)
             }
             else if(asteroid.type == 'asteroid_m') {
-                var a_1 = new Asteroid(asteroid.position, -1);
+                var a_1 = new Asteroid(asteroid.position, -1, 'asteroid_s');
                 a_1.sprite = self.createAsteroidSprite(a_1.position, a_1.yOffset, 'asteroid_s');
 
                 var a_2 = new Asteroid(asteroid.position, 1);
-                a_2.sprite = self.createAsteroidSprite(a_1.position, a_1.yOffset, 'asteroid_s');
+                a_2.sprite = self.createAsteroidSprite(a_2.position, a_2.yOffset, 'asteroid_s');
 
                 asteroids.push(a_1)
                 asteroids.push(a_2)
@@ -245,6 +246,12 @@ MainState.prototype = {
             self.explosionSFX.play();
         })
         asteroidsToDestroy = [];
+        bulletsToDestroy.forEach(function(bullet) {
+            var index = self.bullets.indexOf(bullet);
+            self.bullets.splice(index, 1);
+            bullet.destroy();
+        })
+        bulletsToDestroy = [];
     },
     checkShipCollisions: function() {
     },
