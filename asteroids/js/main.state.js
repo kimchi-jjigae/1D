@@ -205,6 +205,7 @@ MainState.prototype = {
         })
     },
     checkBulletCollisions: function() {
+        var self = this;
         var asteroidsToDestroy = [];
         this.bullets.forEach(function(bullet) {
             asteroids.forEach(function(asteroid) {
@@ -241,7 +242,7 @@ MainState.prototype = {
             asteroid.sprite.destroy();
             var index = asteroids.indexOf(asteroid);
             asteroids.splice(index, 1);
-            this.explosionSFX.play();
+            self.explosionSFX.play();
         })
         asteroidsToDestroy = [];
     },
