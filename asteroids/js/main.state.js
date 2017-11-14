@@ -96,6 +96,13 @@ MainState.prototype = {
         // necessary to preload the font lol
         game.add.text(0, 0, "", {font: '56px pixelbug', fill: '#ffffff'});
     },
+    createAsteroidSprite: function(position, yOffset, type) {
+        var asteroidSprite = game.add.sprite(position, this.yPosition + yOffset, type);
+        asteroidSprite.scale.set(this.tileScale, this.tileScale);
+        asteroidSprite.anchor.setTo(0.5, 0.5);
+        asteroidSprite.angle = util.randomInt(-180, 180);
+        return asteroidSprite;
+    },
     create: function() {
         var self = this;
         game.add.sprite(0, 0, 'bg');
@@ -117,11 +124,7 @@ MainState.prototype = {
         this.thrustSprite.visible = false;
 
         asteroids.forEach(function(asteroid) {
-            var asteroidSprite = game.add.sprite(asteroid.position, self.yPosition + asteroid.yOffset, asteroid.type);
-            asteroidSprite.scale.set(self.tileScale, self.tileScale);
-            asteroidSprite.anchor.setTo(0.5, 0.5);
-            asteroidSprite.angle = util.randomInt(-180, 180);
-            asteroid.sprite = asteroidSprite;
+            asteroid.sprite = self.createAsteroidSprite(asteroid.position, asteroid.yOffset, asteroid.type);
         })
 
         game.input.keyboard.onDownCallback = function(event) {
@@ -214,42 +217,26 @@ MainState.prototype = {
         asteroidsToDestroy.forEach(function(asteroid) {
             if(asteroid.type == 'asteroid_l') {
                 var a_1 = new Asteroid(asteroid.position, -1);
-                var sprite1 = game.add.sprite(asteroid.position, self.yPosition + asteroid.yOffset, 'asteroid_m');
-                sprite1.scale.set(self.tileScale, self.tileScale);
-                sprite1.anchor.setTo(0.5, 0.5);
-                sprite1.angle = util.randomInt(-180, 180);
-                a_1.sprite = sprite1;
+                a_1.sprite = self.createAsteroidSprite(a_1.position, a_1.yOffset, 'asteroid_m');
 
                 var a_2 = new Asteroid(asteroid.position, 1);
-                var sprite2 = game.add.sprite(asteroid.position, self.yPosition + asteroid.yOffset, 'asteroid_m');
-                sprite2.scale.set(self.tileScale, self.tileScale);
-                sprite2.anchor.setTo(0.5, 0.5);
-                sprite2.angle = util.randomInt(-180, 180);
-                a_2.sprite = sprite2;
+                a_2.sprite = self.createAsteroidSprite(a_1.position, a_1.yOffset, 'asteroid_m');
 
                 asteroids.push(a_1)
                 asteroids.push(a_2)
             }
             else if(asteroid.type == 'asteroid_m') {
                 var a_1 = new Asteroid(asteroid.position, -1);
-                var sprite1 = game.add.sprite(asteroid.position, self.yPosition + asteroid.yOffset, 'asteroid_s');
-                sprite1.scale.set(self.tileScale, self.tileScale);
-                sprite1.anchor.setTo(0.5, 0.5);
-                sprite1.angle = util.randomInt(-180, 180);
-                a_1.sprite = sprite1;
+                a_1.sprite = self.createAsteroidSprite(a_1.position, a_1.yOffset, 'asteroid_s');
 
                 var a_2 = new Asteroid(asteroid.position, 1);
-                var sprite2 = game.add.sprite(asteroid.position, self.yPosition + asteroid.yOffset, 'asteroid_s');
-                sprite2.scale.set(self.tileScale, self.tileScale);
-                sprite2.anchor.setTo(0.5, 0.5);
-                sprite2.angle = util.randomInt(-180, 180);
-                a_2.sprite = sprite2;
+                a_2.sprite = self.createAsteroidSprite(a_1.position, a_1.yOffset, 'asteroid_s');
 
                 asteroids.push(a_1)
                 asteroids.push(a_2)
             }
             else if(asteroid.type == 'asteroid_s') {
-                this.asteroidsDestroyed++;
+                self.asteroidsDestroyed++;
             }
             asteroid.sprite.destroy();
             var index = asteroids.indexOf(asteroid);
