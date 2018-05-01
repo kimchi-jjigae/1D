@@ -153,10 +153,9 @@ MainState.prototype = {
         var bg = game.add.sprite(k.boardPos[0], k.boardPos[1], 'bg');
         bg.scale.set(k.spriteScale, k.spriteScale);
         game.stage.backgroundColor = "#333333";
-        //game.stage.backgroundColor = "#789789";
         game.scale.pageAlignHorizontally = true; game.scale.pageAlignVertically = true;
         game.stage.smoothed = false;
-        game.input.mouse.mouseUpCallback = this.handleMouseUp; 
+        game.input.mouse.mouseUpCallback = () => this.handleMouseUp(); // arrow function for correct `this`
 
         this.buttonAI = game.add.button(685, 200, 'buttonAI', this.startGame, this, 1, 0, 1);
         this.buttonPvP = game.add.button(481, 200, 'buttonPvP', this.startGame, this, 1, 0, 1);
@@ -164,9 +163,6 @@ MainState.prototype = {
         this.buttonPass = game.add.button(winsize[0] / 2 - 100, 200, 'buttonPass', this.pass, this, 1, 0, 1);
         this.buttonPass.visible = false;
         k.init();
-    },
-    handleMouseUp: function() {
-        console.log("hej");
     },
     update: function() {
         if(k.placingStone) {
@@ -204,7 +200,33 @@ MainState.prototype = {
             }
         }
         return false;
-    }
+    },
+    handleMouseUp: function() {
+        if(k.hoveringStone) {
+            // add sprite
+            let i = this.closestPos();
+            let colour = k.currentPlayer == 0 ? 'black' : 'white';
+            let pos = k.placementPositions[i];
+            let newStone = game.add.sprite(pos[0], pos[1], colour);
+            newStone.scale.set(k.spriteScale, k.spriteScale);
+            k.placedStones[i] = newStone;
+
+            // check for captures
+            // updated permitted placements
+                // check for ko
+            /*
+            // update other stuff
+    capturedPieces: [0, 0],
+    permittedPlacements: new Array(19),
+    previouslyCapturedStones: [],
+    */
+            k.consecutivePasses = 0;
+            k.currentPlayer = !k.currentPlayer;
+            k.previousPlacement = i;
+            colour = k.currentPlayer == 0 ? 'Black' : 'White';
+            k.stateText.text = colour + " to move";
+        }
+    },
 };
 
 game.state.add('MainState', MainState);
