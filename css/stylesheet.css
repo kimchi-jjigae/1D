@@ -1,5 +1,10 @@
 @font-face
 {
+    font-family: nokiafc;
+    src: url('../static/fonts/nokiafc22.ttf') format("truetype");
+}
+@font-face
+{
     font-family: pixelbug;
     src: url('../static/fonts/pixel_bug.otf') format("opentype");
 }
