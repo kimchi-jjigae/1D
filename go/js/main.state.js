@@ -14,12 +14,12 @@ K.prototype = {
     aiPlayer: 0,
 
     currentPlayer: 0, // 0 black, 1 white
-    capturedPieces: [0, 0],
+    capturedScore: [0, 0],
     areaScore: [0, 0],
     totalScore: [0, 0],
     placedStones: new Array(19), // hmm
     permittedPlacements: new Array(19),
-    previouslyCapturedStones: [],
+    previouslyCaptured: [],
     previousPlacement: 0,
 
     boardPos: [0, 420],
@@ -97,7 +97,6 @@ K.prototype = {
         this.totalScoreWhiteText.visible = false;
     },
 };
-
 var k = new K();
 
 var MainState = function() {};
@@ -121,19 +120,35 @@ MainState.prototype = {
         k.placingStone = true;
     },
     pass: function() {
-        k.consecutivePasses++;
+        if(++k.consecutivePasses == 2) {
+            k.gameOver = true;
+            this.endGame();
+        }
+        else {
+            k.currentPlayer = !k.currentPlayer;
+            k.previousPlacement = undefined;
+            let colour = k.currentPlayer == 0 ? 'Black' : 'White';
+            k.stateText.text = colour + " to move";
+        }
     },
     endGame: function() {
-        this.buttonPvP.visible = false;
-        this.buttonAI.visible = false;
-
-        k.stateText.visible = true;
-        k.capturedTitleText.visible = true;
-        k.capturedBlackText.visible = true;
-        k.capturedWhiteText.visible = true;
-        k.capturedBlackSprite.visible = true;
-        k.capturedWhiteSprite.visible = true;
-        this.buttonPass.visible = true;
+        // calculate captured + dead stones
+        // calculate area
+        k.stateText.text = "Who won?";
+        k.capturedTitleText.visible = false;
+        k.capturedBlackText.visible = false;
+        k.capturedWhiteText.visible = false;
+        k.capturedBlackSprite.visible = false;
+        k.capturedWhiteSprite.visible = false;
+        this.buttonPass.visible = false;
+        k.hoverBlackSprite.visible = false;
+        k.hoverWhiteSprite.visible = false;
+        k.captureScoreBlackText.visible = true;
+        k.captureScoreWhiteText.visible = true;
+        k.areaScoreBlackText.visible = true;
+        k.areaScoreWhiteText.visible = true;
+        k.totalScoreBlackText.visible = true;
+        k.totalScoreWhiteText.visible = true;
     },
     preload: function() {
         game.load.image('black', 'assets/sprites/black.png');
@@ -165,7 +180,9 @@ MainState.prototype = {
         k.init();
     },
     update: function() {
-        if(k.placingStone) {
+        if(k.gameOver) {
+        }
+        else if(k.placingStone) {
             if(this.atPermittedPlacement()) {
                 k.hoveringStone = true;
                 let i = this.closestPos();
@@ -186,8 +203,6 @@ MainState.prototype = {
                 k.hoverWhiteSprite.visible = false;
             }
         }
-        else if(k.gameOver) {
-        }
     },
     closestPos: function() {
         return Math.floor(game.input.mousePointer.x / (winsize[0]/19));
@@ -204,27 +219,56 @@ MainState.prototype = {
     handleMouseUp: function() {
         if(k.hoveringStone) {
             // add sprite
-            let i = this.closestPos();
+            let hej = this.closestPos();
             let colour = k.currentPlayer == 0 ? 'black' : 'white';
-            let pos = k.placementPositions[i];
+            let pos = k.placementPositions[hej];
             let newStone = game.add.sprite(pos[0], pos[1], colour);
             newStone.scale.set(k.spriteScale, k.spriteScale);
-            k.placedStones[i] = newStone;
+            k.placedStones[hej] = newStone;
 
             // check for captures
+            let directions = [-1, 1];
+            if(hej == 0) {
+                directions = [1];
+            }
+            else if(hej == 18) {
+                directions = [-1];
+            }
+            k.previouslyCaptured = [];
+            let antiColour = k.currentPlayer == 0 ? 'white' : 'black';
+            for(let dir of directions) {
+                let maybeCaptured = [];
+                let hej2 = hej + dir;
+                while(k.placedStones[hej2] != undefined && k.placedStones[hej2].key == antiColour) {
+                    maybeCaptured.push(hej2);
+                    hej2 += dir;
+                }
+                if(maybeCaptured.length > 0) {
+                    let sameColour = k.placedStones[hej2] != undefined && k.placedStones[hej2].key == colour;
+                    if(hej2 == -1 || hej2 == 19 || sameColour) {
+                        k.previouslyCaptured.push(...maybeCaptured);
+                    }
+                }
+            }
+            for(let i of k.previouslyCaptured) {
+                k.placedStones[i].destroy();
+                k.placedStones[i] = undefined;
+            }
+            k.capturedScore[k.currentPlayer] += k.previouslyCaptured.length;
+
             // updated permitted placements
+                // check for suicides but keep in mind capture attacks
                 // check for ko
-            /*
+            //permittedPlacements: new Array(19),
+
             // update other stuff
-    capturedPieces: [0, 0],
-    permittedPlacements: new Array(19),
-    previouslyCapturedStones: [],
-    */
             k.consecutivePasses = 0;
-            k.currentPlayer = !k.currentPlayer;
+            k.currentPlayer = k.currentPlayer == 0 ? 1 : 0;
             k.previousPlacement = i;
             colour = k.currentPlayer == 0 ? 'Black' : 'White';
             k.stateText.text = colour + " to move";
+            k.capturedBlackText.text = "x " + k.capturedScore[1];
+            k.capturedWhiteText.text = "x " + k.capturedScore[0];
         }
     },
 };
