@@ -6,7 +6,7 @@ var game = new Phaser.Game(winsize[0], winsize[1], Phaser.AUTO, '', null, false,
 var K = function() {};
 K.prototype = {
     placingStone: false,
-    gameStarted: false,
+    hoveringStone: false,
     gameOver: false,
     consecutivePasses: 0, 
 
@@ -22,9 +22,10 @@ K.prototype = {
     previouslyCapturedStones: [],
     previousPlacement: 0,
 
-    boardPosition: [0, 0],
+    boardPos: [0, 420],
     placementPositions: new Array(19),
-    cursorDistanceThreshold: 20,
+    hoverBlackSprite: undefined,
+    hoverWhiteSprite: undefined,
     spriteScale: 4.8,
 
     stateText: undefined,
@@ -41,32 +42,30 @@ K.prototype = {
     capturedBlackSprite: undefined,
     capturedWhiteSprite: undefined,
 
-    buttonPvP: undefined,
-    buttonAI: undefined,
-    buttonPass: undefined,
-    /*
-    this.button1 = game.add.button(481, 200, 'button1', this.startGame, this, 1, 0, 1);
-    this.button2 = game.add.button(685, 200, 'button2', this.startGame, this, 1, 0, 1);
-    this.button1 = game.add.button(481, 200, 'button1', this.startGame, this, 1, 0, 1);
-    */
     init: function() {
-        for(var i = 0; i < 19; ++i) {
+        for(let i = 0; i < 19; ++i) {
             this.placementPositions[i] = [
-                this.boardPosition[0] + i * 64,
-                this.boardPosition[1]
-            ]
+                this.boardPos[0] + i * 15 * this.spriteScale,
+                this.boardPos[1]
+            ];
+            this.permittedPlacements[i] = true;
         }
+        // gameplay
         this.stateText = game.add.text(winsize[0] / 2, 80, "Black to move", {font: '56px nokiafc', fill: '#ffffff'});
         this.capturedTitleText = game.add.text(30, 550, "Captured pieces:", {font: '56px nokiafc', fill: '#ffffff'});
         this.capturedBlackText = game.add.text(130, 620, "x 0", {font: '56px nokiafc', fill: '#ffffff'});
         this.capturedWhiteText = game.add.text(130, 690, "x 0", {font: '56px nokiafc', fill: '#ffffff'});
         this.capturedBlackSprite = game.add.sprite(40, 615, 'black');
         this.capturedWhiteSprite = game.add.sprite(40, 685, 'white');
+        this.hoverBlackSprite = game.add.sprite(0, 0, 'black_hover');
+        this.hoverWhiteSprite = game.add.sprite(0, 0, 'white_hover');
         this.capturedBlackSprite.scale.set(k.spriteScale, k.spriteScale);
         this.capturedWhiteSprite.scale.set(k.spriteScale, k.spriteScale);
+        this.hoverBlackSprite.scale.set(k.spriteScale, k.spriteScale);
+        this.hoverWhiteSprite.scale.set(k.spriteScale, k.spriteScale);
 
-        /*
         let xPos = 320;
+        // endgame
         this.captureScoreBlackText = game.add.text(xPos, 560, "Capture score: 0", {font: '48px nokiafc', fill: '#ffffff'});
         this.captureScoreWhiteText = game.add.text(winsize[0] - xPos, 560, "Capture score: 0", {font: '48px nokiafc', fill: '#ffffff'});
         this.areaScoreBlackText = game.add.text(xPos, 630, "Area score: 0", {font: '48px nokiafc', fill: '#ffffff'});
@@ -74,14 +73,28 @@ K.prototype = {
         this.totalScoreBlackText = game.add.text(xPos, 710, "Total score: 0", {font: '56px nokiafc', fill: '#ffffff'});
         this.totalScoreWhiteText = game.add.text(winsize[0] - xPos, 710, "Total score: 0", {font: '56px nokiafc', fill: '#ffffff'});
 
+        util.recentreText(this.stateText);
         util.recentreText(this.captureScoreBlackText);
         util.recentreText(this.captureScoreWhiteText);
         util.recentreText(this.areaScoreBlackText);
         util.recentreText(this.areaScoreWhiteText);
         util.recentreText(this.totalScoreBlackText);
         util.recentreText(this.totalScoreWhiteText);
-        */
-        util.recentreText(this.stateText);
+
+        this.stateText.visible = false;
+        this.capturedTitleText.visible = false;
+        this.capturedBlackText.visible = false;
+        this.capturedWhiteText.visible = false;
+        this.capturedBlackSprite.visible = false;
+        this.capturedWhiteSprite.visible = false;
+        this.hoverBlackSprite.visible = false;
+        this.hoverWhiteSprite.visible = false;
+        this.captureScoreBlackText.visible = false;
+        this.captureScoreWhiteText.visible = false;
+        this.areaScoreBlackText.visible = false;
+        this.areaScoreWhiteText.visible = false;
+        this.totalScoreBlackText.visible = false;
+        this.totalScoreWhiteText.visible = false;
     },
 };
 
@@ -89,19 +102,38 @@ var k = new K();
 
 var MainState = function() {};
 MainState.prototype = {
+    // buttons here to access functions lol
+    buttonPvP: undefined, 
+    buttonAI: undefined,
+    buttonPass: undefined,
     startGame: function() {
-        /*
-        k.button1.visible = false;
-        k.button2.visible = false;
-        k.buttonPass.visible = true;
+        this.buttonPvP.visible = false;
+        this.buttonAI.visible = false;
 
-        this.ballSprite.visible = true;
-        if(util.randomBool()) {
-            this.ballVelocity *= -1;
-        }
+        k.stateText.visible = true;
+        k.capturedTitleText.visible = true;
+        k.capturedBlackText.visible = true;
+        k.capturedWhiteText.visible = true;
+        k.capturedBlackSprite.visible = true;
+        k.capturedWhiteSprite.visible = true;
+        this.buttonPass.visible = true;
 
-        this.started = true;
-        */
+        k.placingStone = true;
+    },
+    pass: function() {
+        k.consecutivePasses++;
+    },
+    endGame: function() {
+        this.buttonPvP.visible = false;
+        this.buttonAI.visible = false;
+
+        k.stateText.visible = true;
+        k.capturedTitleText.visible = true;
+        k.capturedBlackText.visible = true;
+        k.capturedWhiteText.visible = true;
+        k.capturedBlackSprite.visible = true;
+        k.capturedWhiteSprite.visible = true;
+        this.buttonPass.visible = true;
     },
     preload: function() {
         game.load.image('black', 'assets/sprites/black.png');
@@ -110,26 +142,68 @@ MainState.prototype = {
         game.load.image('white_hover', 'assets/sprites/white_hover.png');
         game.load.image('bg', 'assets/sprites/bg.png');
 
-        game.load.spritesheet('button1', 'assets/sprites/button1.png', 200, 60, 2);
-        game.load.spritesheet('button2', 'assets/sprites/button2.png', 200, 60, 2);
-        game.load.spritesheet('buttonPass', 'assets/sprites/button2.png', 200, 60, 2);
+        game.load.spritesheet('buttonPvP', 'assets/sprites/buttonpvp.png', 200, 60, 2);
+        game.load.spritesheet('buttonAI', 'assets/sprites/buttonai.png', 200, 60, 2);
+        game.load.spritesheet('buttonPass', 'assets/sprites/buttonpass.png', 200, 60, 2);
 
 	    game.load.script('utilScript', '../js/util.js');
         game.add.text(0, 0, "", {font: '56px nokiafc', fill: '#ffffff'});
     },
     create: function() {
-        var bg = game.add.sprite(0, 420, 'bg');
+        var bg = game.add.sprite(k.boardPos[0], k.boardPos[1], 'bg');
         bg.scale.set(k.spriteScale, k.spriteScale);
         game.stage.backgroundColor = "#333333";
         //game.stage.backgroundColor = "#789789";
         game.scale.pageAlignHorizontally = true; game.scale.pageAlignVertically = true;
-
         game.stage.smoothed = false;
+        game.input.mouse.mouseUpCallback = this.handleMouseUp; 
+
+        this.buttonAI = game.add.button(685, 200, 'buttonAI', this.startGame, this, 1, 0, 1);
+        this.buttonPvP = game.add.button(481, 200, 'buttonPvP', this.startGame, this, 1, 0, 1);
+
+        this.buttonPass = game.add.button(winsize[0] / 2 - 100, 200, 'buttonPass', this.pass, this, 1, 0, 1);
+        this.buttonPass.visible = false;
         k.init();
     },
-    update: function() {
+    handleMouseUp: function() {
+        console.log("hej");
     },
-    eatTail: function() {
+    update: function() {
+        if(k.placingStone) {
+            if(this.atPermittedPlacement()) {
+                k.hoveringStone = true;
+                let i = this.closestPos();
+                if(k.currentPlayer == 0) {
+                    k.hoverBlackSprite.visible = true;
+                    k.hoverBlackSprite.x = k.placementPositions[i][0];
+                    k.hoverBlackSprite.y = k.placementPositions[i][1];
+                }
+                else {
+                    k.hoverWhiteSprite.visible = true;
+                    k.hoverWhiteSprite.x = k.placementPositions[i][0];
+                    k.hoverWhiteSprite.y = k.placementPositions[i][1];
+                }
+            }
+            else {
+                k.hoveringStone = false;
+                k.hoverBlackSprite.visible = false;
+                k.hoverWhiteSprite.visible = false;
+            }
+        }
+        else if(k.gameOver) {
+        }
+    },
+    closestPos: function() {
+        return Math.floor(game.input.mousePointer.x / (winsize[0]/19));
+    },
+    atPermittedPlacement: function() {
+        let mouseY = game.input.mousePointer.y;
+        if(mouseY > k.boardPos[1] && mouseY < k.boardPos[1] + 72) {
+            if(k.permittedPlacements[this.closestPos()] === true) {
+                return true;
+            }
+        }
+        return false;
     }
 };
 
