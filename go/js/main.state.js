@@ -228,24 +228,18 @@ MainState.prototype = {
 
             // check for captures
             let directions = [-1, 1];
-            if(hej == 0) {
-                directions = [1];
-            }
-            else if(hej == 18) {
-                directions = [-1];
-            }
             k.previouslyCaptured = [];
             let antiColour = k.currentPlayer == 0 ? 'white' : 'black';
             for(let dir of directions) {
                 let maybeCaptured = [];
-                let hej2 = hej + dir;
-                while(k.placedStones[hej2] != undefined && k.placedStones[hej2].key == antiColour) {
-                    maybeCaptured.push(hej2);
-                    hej2 += dir;
+                let hoj = hej + dir;
+                while(k.placedStones[hoj] != undefined && k.placedStones[hoj].key == antiColour) {
+                    maybeCaptured.push(hoj);
+                    hoj += dir;
                 }
                 if(maybeCaptured.length > 0) {
-                    let sameColour = k.placedStones[hej2] != undefined && k.placedStones[hej2].key == colour;
-                    if(hej2 == -1 || hej2 == 19 || sameColour) {
+                    let sameColour = k.placedStones[hoj] != undefined && k.placedStones[hoj].key == colour;
+                    if(hoj == -1 || hoj == 19 || sameColour) {
                         k.previouslyCaptured.push(...maybeCaptured);
                     }
                 }
@@ -257,14 +251,50 @@ MainState.prototype = {
             k.capturedScore[k.currentPlayer] += k.previouslyCaptured.length;
 
             // updated permitted placements
-                // check for suicides but keep in mind capture attacks
-                // check for ko
-            //permittedPlacements: new Array(19),
+            k.permittedPlacements.forEach(function(value, i) {
+                let permitted = true;
+                if(k.placedStones[i] != undefined) {
+                    // may not place where stones exist
+                    permitted = false;
+                }
+                else {
+                    // suicide prevention
+                    let directions = [-1, 1];
+                    let surrounded = [0, 0]; // 0
+                    let antiColour = k.currentPlayer == 0 ? 'white' : 'black';
+                    directions.forEach(function(dir, j) {
+                        let hoj = i + dir;
+                        while(k.placedStones[hoj] != undefined && k.placedStones[hoj].key == antiColour) {
+                            // skip over the stones of the next player's colour
+                            hoj += dir;
+                        }
+                        if(k.placedStones[hoj] == undefined) {
+                            if(hoj == -1 || hoj == 19) {
+                                // an edge is equivalent to an enemy stone
+                                surrounded[j] = true;
+                            }
+                            else {
+                                surrounded[j] = false;
+                            }
+                        }
+                        else if(k.placedStones[hoj].key == colour) {
+                            surrounded[j] = true;
+                        }
+                    });
+                    if(surrounded[0] && surrounded[1]) {
+                        permitted = false;
+                    }
+
+                    // can capture
+                        // is ko
+                }
+                k.permittedPlacements[i] = permitted;
+            });
 
             // update other stuff
             k.consecutivePasses = 0;
             k.currentPlayer = k.currentPlayer == 0 ? 1 : 0;
-            k.previousPlacement = i;
+            k.previousPlacement = hej;
             colour = k.currentPlayer == 0 ? 'Black' : 'White';
             k.stateText.text = colour + " to move";
             k.capturedBlackText.text = "x " + k.capturedScore[1];
