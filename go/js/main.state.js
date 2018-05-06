@@ -203,6 +203,9 @@ MainState.prototype = {
                 k.hoverWhiteSprite.visible = false;
             }
         }
+        else {
+            this.startGame();
+        }
     },
     closestPos: function() {
         return Math.floor(game.input.mousePointer.x / (winsize[0]/19));
@@ -259,7 +262,6 @@ MainState.prototype = {
                 }
                 else {
                     // suicide prevention
-                    let directions = [-1, 1];
                     let surrounded = [0, 0]; // 0
                     let antiColour = k.currentPlayer == 0 ? 'white' : 'black';
                     directions.forEach(function(dir, j) {
@@ -285,8 +287,34 @@ MainState.prototype = {
                         permitted = false;
                     }
 
-                    // can capture
-                        // is ko
+                    // but if possible to capture, then ignore suicide rule
+                    for(let dir of directions) {
+                        let maybeCaptured = [];
+                        let canCapture = false;
+                        let hoj = i + dir;
+                        while(k.placedStones[hoj] != undefined && k.placedStones[hoj].key == colour) {
+                            maybeCaptured.push(hoj);
+                            hoj += dir;
+                        }
+                        if(maybeCaptured.length > 0) {
+                            let sameColour = k.placedStones[hoj] != undefined && k.placedStones[hoj].key == antiColour;
+                            if(hoj == -1 || hoj == 19 || sameColour) {
+                                canCapture = true;
+                            }
+                        }
+                        if(canCapture) {
+                            // if it is ko, then may not place
+                            // ko if:
+                                // exactly one stone captured in the previous move
+                                // the placed stone is at this position
+                                // the placed stone will capture exactly one stone
+                                // which hapens to be the stone previously used for capturing!
+                            permitted = true;
+                            if(k.previouslyCaptured.length == 1 && k.previouslyCaptured[0] == i) {
+                                permitted = false;
+                            }
+                        }
+                    }
                 }
                 k.permittedPlacements[i] = permitted;
             });
