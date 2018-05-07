@@ -219,6 +219,25 @@ MainState.prototype = {
         }
         return false;
     },
+    checkCaptures: function(position, colour, anticolour) {
+        let directions = [-1, 1];
+        let captured = [[], []];
+        directions.forEach((dir, i) => {
+            let maybeCaptured = [];
+            let hoj = position + dir;
+            while(k.placedStones[hoj] != undefined && k.placedStones[hoj].key == anticolour) {
+                maybeCaptured.push(hoj);
+                hoj += dir;
+            }
+            if(maybeCaptured.length > 0) {
+                let sameColour = k.placedStones[hoj] != undefined && k.placedStones[hoj].key == colour;
+                if(hoj == -1 || hoj == 19 || sameColour) {
+                    captured[i] = maybeCaptured;
+                }
+            }
+        });
+        return captured;
+    },
     handleMouseUp: function() {
         if(k.hoveringStone) {
             // add sprite
@@ -230,31 +249,20 @@ MainState.prototype = {
             k.placedStones[hej] = newStone;
 
             // check for captures
-            let directions = [-1, 1];
+            let anticolour = k.currentPlayer == 0 ? 'white' : 'black';
+            let captures = this.checkCaptures(hej, colour, anticolour);
             k.previouslyCaptured = [];
-            let antiColour = k.currentPlayer == 0 ? 'white' : 'black';
-            for(let dir of directions) {
-                let maybeCaptured = [];
-                let hoj = hej + dir;
-                while(k.placedStones[hoj] != undefined && k.placedStones[hoj].key == antiColour) {
-                    maybeCaptured.push(hoj);
-                    hoj += dir;
-                }
-                if(maybeCaptured.length > 0) {
-                    let sameColour = k.placedStones[hoj] != undefined && k.placedStones[hoj].key == colour;
-                    if(hoj == -1 || hoj == 19 || sameColour) {
-                        k.previouslyCaptured.push(...maybeCaptured);
-                    }
-                }
-            }
+            k.previouslyCaptured.push(...captures[0]);
+            k.previouslyCaptured.push(...captures[1]);
             for(let i of k.previouslyCaptured) {
                 k.placedStones[i].destroy();
                 k.placedStones[i] = undefined;
             }
+            
             k.capturedScore[k.currentPlayer] += k.previouslyCaptured.length;
 
             // updated permitted placements
-            k.permittedPlacements.forEach(function(value, i) {
+            k.permittedPlacements.forEach((value, i) => {
                 let permitted = true;
                 if(k.placedStones[i] != undefined) {
                     // may not place where stones exist
@@ -263,10 +271,11 @@ MainState.prototype = {
                 else {
                     // suicide prevention
                     let surrounded = [0, 0]; // 0
-                    let antiColour = k.currentPlayer == 0 ? 'white' : 'black';
-                    directions.forEach(function(dir, j) {
+                    let anticolour = k.currentPlayer == 0 ? 'white' : 'black';
+                    let directions = [-1, 1];
+                    directions.forEach((dir, j) => {
                         let hoj = i + dir;
-                        while(k.placedStones[hoj] != undefined && k.placedStones[hoj].key == antiColour) {
+                        while(k.placedStones[hoj] != undefined && k.placedStones[hoj].key == anticolour) {
                             // skip over the stones of the next player's colour
                             hoj += dir;
                         }
@@ -287,32 +296,21 @@ MainState.prototype = {
                         permitted = false;
                     }
 
-                    // but if possible to capture, then ignore suicide rule
-                    for(let dir of directions) {
-                        let maybeCaptured = [];
-                        let canCapture = false;
-                        let hoj = i + dir;
-                        while(k.placedStones[hoj] != undefined && k.placedStones[hoj].key == colour) {
-                            maybeCaptured.push(hoj);
-                            hoj += dir;
+                    // but if possible to capture, then ignore suicide rule, unless ko
+                    let captures = this.checkCaptures(i, anticolour, colour);
+                    for(let capture of captures) {
+                        // ko if:
+                        // exactly one stone captured in the previous move
+                        // the placed stone is at this position
+                        // the placed stone will capture exactly one stone
+                        // which hapens to be the stone previously used for capturing!
+                        if(k.previouslyCaptured.length == 1 && k.previouslyCaptured[0] == i
+                            && capture.length == 1 && capture[0] == hej) {
+                            permitted = false;
+                            break;
                         }
-                        if(maybeCaptured.length > 0) {
-                            let sameColour = k.placedStones[hoj] != undefined && k.placedStones[hoj].key == antiColour;
-                            if(hoj == -1 || hoj == 19 || sameColour) {
-                                canCapture = true;
-                            }
-                        }
-                        if(canCapture) {
-                            // if it is ko, then may not place
-                            // ko if:
-                                // exactly one stone captured in the previous move
-                                // the placed stone is at this position
-                                // the placed stone will capture exactly one stone
-                                // which hapens to be the stone previously used for capturing!
+                        else if(capture.length > 0) {
                             permitted = true;
-                            if(k.previouslyCaptured.length == 1 && k.previouslyCaptured[0] == i) {
-                                permitted = false;
-                            }
                         }
                     }
                 }
