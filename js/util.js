@@ -27,18 +27,18 @@ var util = {
     },
     recentreText: function(text, position) {
         if(position == undefined) {
-            text.position.x = text.position.x - text.width / 2;
-            text.position.y = text.position.y - text.height / 2;
+            text.x = text.x - text.width / 2;
+            text.y = text.y - text.height / 2;
         }
         else {
-            text.position.x = position.x - text.width / 2;
-            text.position.y = position.y - text.height / 2;
+            text.x = position.x - text.width / 2;
+            text.y = position.y - text.height / 2;
         }
     },
     rightAlignText: function(text, rightBoundary) {
         if(rightBoundary == undefined)
-            text.position.x = text.position.x - text.width;
+            text.x = text.x - text.width;
         else
-            text.position.x = rightBoundary - text.width;
+            text.x = rightBoundary - text.width;
     }
 };

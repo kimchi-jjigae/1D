@@ -1,4 +1,8 @@
 'use strict';
+var debug = true;
+var dprint = function(text) {
+    if(debug) console.log(text);
+};
 
 var winsize = [1366, 768]
 var game = new Phaser.Game(winsize[0], winsize[1], Phaser.AUTO, '', null, false, false);
@@ -29,6 +33,8 @@ K.prototype = {
     spriteScale: 4.8,
 
     stateText: undefined,
+    blackScoreTitle: undefined,
+    whiteScoreTitle: undefined,
     capturedTitleText: undefined,
     capturedBlackText: undefined,
     capturedWhiteText: undefined,
@@ -38,6 +44,7 @@ K.prototype = {
     areaScoreWhiteText: undefined,
     totalScoreBlackText: undefined,
     totalScoreWhiteText: undefined,
+    komiScoreWhiteText: undefined,
 
     capturedBlackSprite: undefined,
     capturedWhiteSprite: undefined,
@@ -66,20 +73,26 @@ K.prototype = {
 
         let xPos = 320;
         // endgame
+        this.blackScoreTitle = game.add.text(xPos, 220, "Black", {font: '56px nokiafc', fill: '#ffffff'});
+        this.whiteScoreTitle = game.add.text(winsize[0] - xPos, 220, "White", {font: '56px nokiafc', fill: '#ffffff'});
         this.captureScoreBlackText = game.add.text(xPos, 560, "Capture score: 0", {font: '48px nokiafc', fill: '#ffffff'});
         this.captureScoreWhiteText = game.add.text(winsize[0] - xPos, 560, "Capture score: 0", {font: '48px nokiafc', fill: '#ffffff'});
         this.areaScoreBlackText = game.add.text(xPos, 630, "Area score: 0", {font: '48px nokiafc', fill: '#ffffff'});
         this.areaScoreWhiteText = game.add.text(winsize[0] - xPos, 630, "Area score: 0", {font: '48px nokiafc', fill: '#ffffff'});
         this.totalScoreBlackText = game.add.text(xPos, 710, "Total score: 0", {font: '56px nokiafc', fill: '#ffffff'});
         this.totalScoreWhiteText = game.add.text(winsize[0] - xPos, 710, "Total score: 0", {font: '56px nokiafc', fill: '#ffffff'});
+        this.komiScoreWhiteText = game.add.text(winsize[0] - xPos, 370, "Komi score: 0.5", {font: '48px nokiafc', fill: '#ffffff'});
 
         util.recentreText(this.stateText);
+        util.recentreText(this.blackScoreTitle);
+        util.recentreText(this.whiteScoreTitle);
         util.recentreText(this.captureScoreBlackText);
         util.recentreText(this.captureScoreWhiteText);
         util.recentreText(this.areaScoreBlackText);
         util.recentreText(this.areaScoreWhiteText);
         util.recentreText(this.totalScoreBlackText);
         util.recentreText(this.totalScoreWhiteText);
+        util.recentreText(this.komiScoreWhiteText);
 
         this.stateText.visible = false;
         this.capturedTitleText.visible = false;
@@ -89,12 +102,15 @@ K.prototype = {
         this.capturedWhiteSprite.visible = false;
         this.hoverBlackSprite.visible = false;
         this.hoverWhiteSprite.visible = false;
+        this.blackScoreTitle.visible = false;
+        this.whiteScoreTitle.visible = false;
         this.captureScoreBlackText.visible = false;
         this.captureScoreWhiteText.visible = false;
         this.areaScoreBlackText.visible = false;
         this.areaScoreWhiteText.visible = false;
         this.totalScoreBlackText.visible = false;
         this.totalScoreWhiteText.visible = false;
+        this.komiScoreWhiteText.visible = false;
     },
 };
 var k = new K();
@@ -132,9 +148,6 @@ MainState.prototype = {
         }
     },
     endGame: function() {
-        // calculate captured + dead stones
-        // calculate area
-        k.stateText.text = "Who won?";
         k.capturedTitleText.visible = false;
         k.capturedBlackText.visible = false;
         k.capturedWhiteText.visible = false;
@@ -143,12 +156,33 @@ MainState.prototype = {
         this.buttonPass.visible = false;
         k.hoverBlackSprite.visible = false;
         k.hoverWhiteSprite.visible = false;
+
+        k.blackScoreTitle.visible = true;
+        k.whiteScoreTitle.visible = true;
         k.captureScoreBlackText.visible = true;
         k.captureScoreWhiteText.visible = true;
         k.areaScoreBlackText.visible = true;
         k.areaScoreWhiteText.visible = true;
         k.totalScoreBlackText.visible = true;
         k.totalScoreWhiteText.visible = true;
+        k.komiScoreWhiteText.visible = true;
+
+        this.calculateDeadStones();
+        this.calculateAreaScores();
+        k.totalScore[0] = k.capturedScore[0] + k.areaScore[0];
+        k.totalScore[1] = k.capturedScore[1] + k.areaScore[1] + 0.5; // komi
+
+        k.captureScoreBlackText.text = "Capture score: " + k.capturedScore[0];
+        k.captureScoreWhiteText.text = "Capture score: " + k.capturedScore[1];
+        k.areaScoreBlackText.text = "Area score: " + k.areaScore[0];
+        k.areaScoreWhiteText.text = "Area score: " + k.areaScore[1];
+        k.totalScoreBlackText.text = "Total score: " + k.totalScore[0];
+        k.totalScoreWhiteText.text = "Total score: " + k.totalScore[1];
+        let winner = k.totalScore[0] > k.totalScore[1] ? "black" : "white";
+        k.stateText.text = "Congratulations, " + winner + "! You win!";
+        k.stateText.x = winsize[0] / 2;
+        k.stateText.y = 80;
+        util.recentreText(k.stateText);
     },
     preload: function() {
         game.load.image('black', 'assets/sprites/black.png');
@@ -261,11 +295,14 @@ MainState.prototype = {
             
             k.capturedScore[k.currentPlayer] += k.previouslyCaptured.length;
 
+            dprint("updating permitted placements");
             // updated permitted placements
             k.permittedPlacements.forEach((value, i) => {
+                dprint(i);
                 let permitted = true;
                 if(k.placedStones[i] != undefined) {
                     // may not place where stones exist
+                    dprint("blocked");
                     permitted = false;
                 }
                 else {
@@ -294,6 +331,7 @@ MainState.prototype = {
                     });
                     if(surrounded[0] && surrounded[1]) {
                         permitted = false;
+                        dprint("suicide-prevented");
                     }
 
                     // but if possible to capture, then ignore suicide rule, unless ko
@@ -306,10 +344,12 @@ MainState.prototype = {
                         // which hapens to be the stone previously used for capturing!
                         if(k.previouslyCaptured.length == 1 && k.previouslyCaptured[0] == i
                             && capture.length == 1 && capture[0] == hej) {
+                            dprint("capture but it's ko");
                             permitted = false;
                             break;
                         }
                         else if(capture.length > 0) {
+                            dprint("capture but not ko");
                             permitted = true;
                         }
                     }
@@ -326,6 +366,10 @@ MainState.prototype = {
             k.capturedBlackText.text = "x " + k.capturedScore[1];
             k.capturedWhiteText.text = "x " + k.capturedScore[0];
         }
+    },
+    calculateDeadStones: function() {
+    },
+    calculateAreaScores: function() {
     },
 };
 
