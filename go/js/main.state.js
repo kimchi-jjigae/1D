@@ -141,6 +141,7 @@ MainState.prototype = {
             this.endGame();
         }
         else {
+            this.updatePermittedPlacements();
             k.currentPlayer = !k.currentPlayer;
             k.previousPlacement = undefined;
             let colour = k.currentPlayer == 0 ? 'Black' : 'White';
@@ -295,67 +296,7 @@ MainState.prototype = {
             
             k.capturedScore[k.currentPlayer] += k.previouslyCaptured.length;
 
-            dprint("updating permitted placements");
-            // updated permitted placements
-            k.permittedPlacements.forEach((value, i) => {
-                dprint(i);
-                let permitted = true;
-                if(k.placedStones[i] != undefined) {
-                    // may not place where stones exist
-                    dprint("blocked");
-                    permitted = false;
-                }
-                else {
-                    // suicide prevention
-                    let surrounded = [0, 0]; // 0
-                    let anticolour = k.currentPlayer == 0 ? 'white' : 'black';
-                    let directions = [-1, 1];
-                    directions.forEach((dir, j) => {
-                        let hoj = i + dir;
-                        while(k.placedStones[hoj] != undefined && k.placedStones[hoj].key == anticolour) {
-                            // skip over the stones of the next player's colour
-                            hoj += dir;
-                        }
-                        if(k.placedStones[hoj] == undefined) {
-                            if(hoj == -1 || hoj == 19) {
-                                // an edge is equivalent to an enemy stone
-                                surrounded[j] = true;
-                            }
-                            else {
-                                surrounded[j] = false;
-                            }
-                        }
-                        else if(k.placedStones[hoj].key == colour) {
-                            surrounded[j] = true;
-                        }
-                    });
-                    if(surrounded[0] && surrounded[1]) {
-                        permitted = false;
-                        dprint("suicide-prevented");
-                    }
-
-                    // but if possible to capture, then ignore suicide rule, unless ko
-                    let captures = this.checkCaptures(i, anticolour, colour);
-                    for(let capture of captures) {
-                        // ko if:
-                        // exactly one stone captured in the previous move
-                        // the placed stone is at this position
-                        // the placed stone will capture exactly one stone
-                        // which hapens to be the stone previously used for capturing!
-                        if(k.previouslyCaptured.length == 1 && k.previouslyCaptured[0] == i
-                            && capture.length == 1 && capture[0] == hej) {
-                            dprint("capture but it's ko");
-                            permitted = false;
-                            break;
-                        }
-                        else if(capture.length > 0) {
-                            dprint("capture but not ko");
-                            permitted = true;
-                        }
-                    }
-                }
-                k.permittedPlacements[i] = permitted;
-            });
+            this.updatePermittedPlacements(hej);
 
             // update other stuff
             k.consecutivePasses = 0;
@@ -366,6 +307,74 @@ MainState.prototype = {
             k.capturedBlackText.text = "x " + k.capturedScore[1];
             k.capturedWhiteText.text = "x " + k.capturedScore[0];
         }
+    },
+    updatePermittedPlacements: function(previousPlacement) {
+        dprint("updating permitted placements");
+        k.permittedPlacements.forEach((value, i) => {
+            dprint(i);
+            let permitted = true;
+            if(k.placedStones[i] != undefined) {
+                // may not place where stones exist
+                dprint("blocked");
+                permitted = false;
+            }
+            else {
+                // suicide prevention
+                let surrounded = [0, 0]; // 0
+                let colour = k.currentPlayer == 0 ? 'black' : 'white';
+                let anticolour = k.currentPlayer == 0 ? 'white' : 'black';
+                let directions = [-1, 1];
+                directions.forEach((dir, j) => {
+                    let hoj = i + dir;
+                    while(k.placedStones[hoj] != undefined && k.placedStones[hoj].key == anticolour) {
+                        // skip over the stones of the next player's colour
+                        hoj += dir;
+                    }
+                    if(k.placedStones[hoj] == undefined) {
+                        if(hoj == -1 || hoj == 19) {
+                            // an edge is equivalent to an enemy stone
+                            surrounded[j] = true;
+                        }
+                        else {
+                            surrounded[j] = false;
+                        }
+                    }
+                    else if(k.placedStones[hoj].key == colour) {
+                        surrounded[j] = true;
+                    }
+                });
+                if(surrounded[0] && surrounded[1]) {
+                    permitted = false;
+                    dprint("suicide-prevented");
+                }
+
+                // but if possible to capture, then ignore suicide rule, unless ko
+                let captures = this.checkCaptures(i, anticolour, colour);
+                for(let capture of captures) {
+                    if(this.μ(i, previousPlacement, capture)) {
+                        dprint("capture but it's ko");
+                        permitted = false;
+                        break;
+                    }
+                    else if(capture.length > 0) {
+                        dprint("capture but not ko");
+                        permitted = true;
+                    }
+                }
+            }
+            k.permittedPlacements[i] = permitted;
+        });
+    },
+    μ: function(position, previousPlacement, placementCapture) { // 🐮 muuuu
+        // ko if all of the following:
+        // exactly one stone captured in the previous move,
+        let oneCaptured = k.previouslyCaptured.length == 1;
+        // the placed stone is at this position,
+        let atCaptured = k.previouslyCaptured[0] == position;
+        // the placed stone will capture exactly one stone,
+        // which happens to be the stone previously used for capturing!
+        let capturePrevious = placementCapture.length == 1 && placementCapture[0] == previousPlacement;
+        return oneCaptured && atCaptured && capturePrevious;
     },
     calculateDeadStones: function() {
     },
