@@ -1,5 +1,5 @@
 'use strict';
-var debug = true;
+var debug = false;
 var dprint = function(text) {
     if(debug) console.log(text);
 };
@@ -21,7 +21,7 @@ K.prototype = {
     capturedScore: [0, 0],
     areaScore: [0, 0],
     totalScore: [0, 0],
-    placedStones: new Array(19), // hmm
+    placedSprites: new Array(19),
     permittedPlacements: new Array(19),
     previouslyCaptured: [],
     previousPlacement: 0,
@@ -80,7 +80,7 @@ K.prototype = {
         this.areaScoreBlackText = game.add.text(xPos, 630, "Area score: 0", {font: '48px nokiafc', fill: '#ffffff'});
         this.areaScoreWhiteText = game.add.text(winsize[0] - xPos, 630, "Area score: 0", {font: '48px nokiafc', fill: '#ffffff'});
         this.totalScoreBlackText = game.add.text(xPos, 710, "Total score: 0", {font: '56px nokiafc', fill: '#ffffff'});
-        this.totalScoreWhiteText = game.add.text(winsize[0] - xPos, 710, "Total score: 0", {font: '56px nokiafc', fill: '#ffffff'});
+        this.totalScoreWhiteText = game.add.text(winsize[0] - xPos - 10, 710, "Total score: 0", {font: '56px nokiafc', fill: '#ffffff'});
         this.komiScoreWhiteText = game.add.text(winsize[0] - xPos, 370, "Komi score: 0.5", {font: '48px nokiafc', fill: '#ffffff'});
 
         util.recentreText(this.stateText);
@@ -179,6 +179,11 @@ MainState.prototype = {
         k.areaScoreWhiteText.text = "Area score: " + k.areaScore[1];
         k.totalScoreBlackText.text = "Total score: " + k.totalScore[0];
         k.totalScoreWhiteText.text = "Total score: " + k.totalScore[1];
+        if(k.totalScore[1] > 9.5) {
+            k.totalScoreWhiteText.x = winsize[0] - 320;
+            k.totalScoreWhiteText.y = 710;
+            util.recentreText(k.totalScoreWhiteText);
+        }
         let winner = k.totalScore[0] > k.totalScore[1] ? "black" : "white";
         k.stateText.text = "Congratulations, " + winner + "! You win!";
         k.stateText.x = winsize[0] / 2;
@@ -260,12 +265,12 @@ MainState.prototype = {
         directions.forEach((dir, i) => {
             let maybeCaptured = [];
             let hoj = position + dir;
-            while(k.placedStones[hoj] != undefined && k.placedStones[hoj].key == anticolour) {
+            while(k.placedSprites[hoj] != undefined && k.placedSprites[hoj].key == anticolour) {
                 maybeCaptured.push(hoj);
                 hoj += dir;
             }
             if(maybeCaptured.length > 0) {
-                let sameColour = k.placedStones[hoj] != undefined && k.placedStones[hoj].key == colour;
+                let sameColour = k.placedSprites[hoj] != undefined && k.placedSprites[hoj].key == colour;
                 if(hoj == -1 || hoj == 19 || sameColour) {
                     captured[i] = maybeCaptured;
                 }
@@ -281,7 +286,7 @@ MainState.prototype = {
             let pos = k.placementPositions[hej];
             let newStone = game.add.sprite(pos[0], pos[1], colour);
             newStone.scale.set(k.spriteScale, k.spriteScale);
-            k.placedStones[hej] = newStone;
+            k.placedSprites[hej] = newStone;
 
             // check for captures
             let anticolour = k.currentPlayer == 0 ? 'white' : 'black';
@@ -290,8 +295,8 @@ MainState.prototype = {
             k.previouslyCaptured.push(...captures[0]);
             k.previouslyCaptured.push(...captures[1]);
             for(let i of k.previouslyCaptured) {
-                k.placedStones[i].destroy();
-                k.placedStones[i] = undefined;
+                k.placedSprites[i].destroy();
+                k.placedSprites[i] = undefined;
             }
             
             k.capturedScore[k.currentPlayer] += k.previouslyCaptured.length;
@@ -313,7 +318,7 @@ MainState.prototype = {
         k.permittedPlacements.forEach((value, i) => {
             dprint(i);
             let permitted = true;
-            if(k.placedStones[i] != undefined) {
+            if(k.placedSprites[i] != undefined) {
                 // may not place where stones exist
                 dprint("blocked");
                 permitted = false;
@@ -326,11 +331,11 @@ MainState.prototype = {
                 let directions = [-1, 1];
                 directions.forEach((dir, j) => {
                     let hoj = i + dir;
-                    while(k.placedStones[hoj] != undefined && k.placedStones[hoj].key == anticolour) {
+                    while(k.placedSprites[hoj] != undefined && k.placedSprites[hoj].key == anticolour) {
                         // skip over the stones of the next player's colour
                         hoj += dir;
                     }
-                    if(k.placedStones[hoj] == undefined) {
+                    if(k.placedSprites[hoj] == undefined) {
                         if(hoj == -1 || hoj == 19) {
                             // an edge is equivalent to an enemy stone
                             surrounded[j] = true;
@@ -339,7 +344,7 @@ MainState.prototype = {
                             surrounded[j] = false;
                         }
                     }
-                    else if(k.placedStones[hoj].key == colour) {
+                    else if(k.placedSprites[hoj].key == colour) {
                         surrounded[j] = true;
                     }
                 });
@@ -377,8 +382,45 @@ MainState.prototype = {
         return oneCaptured && atCaptured && capturePrevious;
     },
     calculateDeadStones: function() {
+        // probably skip this
     },
     calculateAreaScores: function() {
+        dprint("Calculating area scores:");
+        let spaces = 0;
+        let last_colour = undefined;
+        let colour_match = (colour) => {
+            let first_stone = last_colour == undefined;
+            let colour_match = colour == last_colour;
+            return first_stone || colour_match;
+        };
+        for(let i = 0; i < 19; ++i) {
+            let sprite = k.placedSprites[i];
+            dprint(i);
+            dprint(sprite);
+            if(sprite == undefined) {
+                spaces++;
+                dprint("empty space, spaces now " + spaces);
+            }
+            else {
+                if(colour_match(sprite.key)) {
+                    let colourIndex = sprite.key == 'black' ? 0 : 1;
+                    k.areaScore[colourIndex] += spaces;
+                    dprint("matched stone colour, given " + spaces);
+                }
+                else {
+                    dprint("non-matching stone colour, reset spaces");
+                }
+                spaces = 0;
+                last_colour = sprite.key;
+            }
+        };
+        if(spaces > 0) {
+            // last unmatched spaces given to last_colour
+            if(last_colour != undefined) {
+                let colourIndex = last_colour == 'black' ? 0 : 1;
+                k.areaScore[colourIndex] += spaces;
+            }
+        }
     },
 };
 
