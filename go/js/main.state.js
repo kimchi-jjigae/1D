@@ -16,6 +16,10 @@ K.prototype = {
 
     aiOn: false,
     aiPlayer: 0,
+    aiThinkingTime: 0,
+    aiChosen: false,
+    aiPlacement: 0,
+    aiPlacingTime: 800, // milliseconds
 
     currentPlayer: 0, // 0 black, 1 white
     capturedScore: [0, 0],
@@ -121,6 +125,14 @@ MainState.prototype = {
     buttonPvP: undefined, 
     buttonAI: undefined,
     buttonPass: undefined,
+    startAiGame: function() {
+        k.aiOn = true;
+        k.aiPlayer = util.randomInt(1);
+        k.aiThinkingTime: 0,
+        k.aiChosen: false,
+        k.aiPlacement: 0,
+        k.aiPlacingTime: 800, // milliseconds
+    },
     startGame: function() {
         this.buttonPvP.visible = false;
         this.buttonAI.visible = false;
@@ -141,12 +153,18 @@ MainState.prototype = {
             this.endGame();
         }
         else {
-            this.updatePermittedPlacements();
-            k.currentPlayer = !k.currentPlayer;
-            k.previousPlacement = undefined;
-            let colour = k.currentPlayer == 0 ? 'Black' : 'White';
-            k.stateText.text = colour + " to move";
+            this.changeTurn(undefined);
         }
+    },
+    changeTurn: function(previousPlacement) {
+        this.hideHoverSprite();
+        this.updatePermittedPlacements();
+        k.currentPlayer = k.currentPlayer == 0 ? 1 : 0;
+        k.previousPlacement = previousPlacement;
+        let colour = k.currentPlayer == 0 ? 'Black' : 'White';
+        k.stateText.text = colour + " to move";
+        k.capturedBlackText.text = "x " + k.capturedScore[1];
+        k.capturedWhiteText.text = "x " + k.capturedScore[0];
     },
     endGame: function() {
         k.capturedTitleText.visible = false;
@@ -219,28 +237,66 @@ MainState.prototype = {
         this.buttonPass.visible = false;
         k.init();
     },
+    hoverSprite: function(position) {
+        if(k.currentPlayer == 0) {
+            k.hoverBlackSprite.visible = true;
+            k.hoverBlackSprite.x = k.placementPositions[position][0];
+            k.hoverBlackSprite.y = k.placementPositions[position][1];
+        }
+        else {
+            k.hoverWhiteSprite.visible = true;
+            k.hoverWhiteSprite.x = k.placementPositions[position][0];
+            k.hoverWhiteSprite.y = k.placementPositions[position][1];
+        }
+    },
+    hideHoverSprite: function() {
+        k.hoveringStone = false;
+        k.hoverBlackSprite.visible = false;
+        k.hoverWhiteSprite.visible = false;
+    },
+    chooseAiPlacement: function() {
+        let placements = [];
+        k.permittedPlacements.forEach((permitted, i) => {
+            if(permitted) {
+                placements.push(i);
+            }
+        });
+        if(placements.length > 0) {
+            let i = util.randomInt(placements.length);
+            return placements[i];
+        }
+        else {
+            return undefined;
+        }
+    },
     update: function() {
         if(k.gameOver) {
         }
         else if(k.placingStone) {
-            if(this.atPermittedPlacement()) {
-                k.hoveringStone = true;
-                let i = this.closestPos();
-                if(k.currentPlayer == 0) {
-                    k.hoverBlackSprite.visible = true;
-                    k.hoverBlackSprite.x = k.placementPositions[i][0];
-                    k.hoverBlackSprite.y = k.placementPositions[i][1];
+            if(k.aiOn && k.aiPlayer == k.currentPlayer) {
+                if(Date.now() > aiThinkingTime + aiPlacingTime) {
+                    this.changeTurn(k.aiPlacement);
                 }
-                else {
-                    k.hoverWhiteSprite.visible = true;
-                    k.hoverWhiteSprite.x = k.placementPositions[i][0];
-                    k.hoverWhiteSprite.y = k.placementPositions[i][1];
+                else if(Date.now() > aiThinkingTime) {
+                    if(!aiChosen) {
+                        let placement = this.chooseAiPlacement();
+                        if(placement != undefined) {
+                            k.aiPlacement = placement;
+                            this.hoverSprite(placement);
+                        }
+                        else {
+                            this.pass();
+                        }
+                    }
                 }
             }
+            else if(this.atPermittedPlacement()) {
+                k.hoveringStone = true;
+                let i = this.closestPos();
+                this.hoverSprite(i);
+            }
             else {
-                k.hoveringStone = false;
-                k.hoverBlackSprite.visible = false;
-                k.hoverWhiteSprite.visible = false;
+                this.hideHoverSprite();
             }
         }
         else {
@@ -305,12 +361,7 @@ MainState.prototype = {
 
             // update other stuff
             k.consecutivePasses = 0;
-            k.currentPlayer = k.currentPlayer == 0 ? 1 : 0;
-            k.previousPlacement = hej;
-            colour = k.currentPlayer == 0 ? 'Black' : 'White';
-            k.stateText.text = colour + " to move";
-            k.capturedBlackText.text = "x " + k.capturedScore[1];
-            k.capturedWhiteText.text = "x " + k.capturedScore[0];
+            this.changeTurn(hej);
         }
     },
     updatePermittedPlacements: function(previousPlacement) {
