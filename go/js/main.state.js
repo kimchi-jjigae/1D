@@ -127,11 +127,13 @@ MainState.prototype = {
     buttonPass: undefined,
     startAiGame: function() {
         k.aiOn = true;
-        k.aiPlayer = util.randomInt(1);
-        k.aiThinkingTime: 0,
-        k.aiChosen: false,
-        k.aiPlacement: 0,
-        k.aiPlacingTime: 800, // milliseconds
+        k.aiPlayer = util.randomInt(2);
+        dprint("AI set to player " + k.aiPlayer);
+        if(k.aiPlayer == 0) {
+            k.stateText.text = "Black (AI) to move";
+            this.buttonPass.visible = false;
+        }
+        this.startGame();
     },
     startGame: function() {
         this.buttonPvP.visible = false;
@@ -146,6 +148,16 @@ MainState.prototype = {
         this.buttonPass.visible = true;
 
         k.placingStone = true;
+
+        this.resetAiThoughts();
+    },
+    resetAiThoughts: function() {
+        if(k.aiOn && k.currentPlayer == k.aiPlayer) {
+            let thinkTime = util.randomFloat(500, 2000);
+            k.aiThinkingTime = Date.now() + thinkTime;
+            k.aiChosen = false;
+            dprint("AI thinking for " + thinkTime + " ms");
+        }
     },
     pass: function() {
         if(++k.consecutivePasses == 2) {
@@ -162,9 +174,17 @@ MainState.prototype = {
         k.currentPlayer = k.currentPlayer == 0 ? 1 : 0;
         k.previousPlacement = previousPlacement;
         let colour = k.currentPlayer == 0 ? 'Black' : 'White';
-        k.stateText.text = colour + " to move";
+        if(k.aiOn && k.currentPlayer == k.aiPlayer) {
+            k.stateText.text = colour + " (AI) to move";
+            this.buttonPass.visible = false;
+        }
+        else {
+            k.stateText.text = colour + " to move";
+            this.buttonPass.visible = true;
+        }
         k.capturedBlackText.text = "x " + k.capturedScore[1];
         k.capturedWhiteText.text = "x " + k.capturedScore[0];
+        this.resetAiThoughts();
     },
     endGame: function() {
         k.capturedTitleText.visible = false;
@@ -230,7 +250,7 @@ MainState.prototype = {
         game.stage.smoothed = false;
         game.input.mouse.mouseUpCallback = () => this.handleMouseUp(); // arrow function for correct `this`
 
-        this.buttonAI = game.add.button(685, 200, 'buttonAI', this.startGame, this, 1, 0, 1);
+        this.buttonAI = game.add.button(685, 200, 'buttonAI', this.startAiGame, this, 1, 0, 1);
         this.buttonPvP = game.add.button(481, 200, 'buttonPvP', this.startGame, this, 1, 0, 1);
 
         this.buttonPass = game.add.button(winsize[0] / 2 - 100, 200, 'buttonPass', this.pass, this, 1, 0, 1);
@@ -273,16 +293,20 @@ MainState.prototype = {
         if(k.gameOver) {
         }
         else if(k.placingStone) {
-            if(k.aiOn && k.aiPlayer == k.currentPlayer) {
-                if(Date.now() > aiThinkingTime + aiPlacingTime) {
-                    this.changeTurn(k.aiPlacement);
+            if(k.aiOn && k.currentPlayer == k.aiPlayer) {
+                if(Date.now() > k.aiThinkingTime + k.aiPlacingTime) {
+                    let blåbär = k.aiPlacement;
+                    this.addNewSprite(blåbär);
+                    this.captureStones(blåbär);
+                    this.changeTurn(blåbär);
                 }
-                else if(Date.now() > aiThinkingTime) {
-                    if(!aiChosen) {
+                else if(Date.now() > k.aiThinkingTime) {
+                    if(!k.aiChosen) {
                         let placement = this.chooseAiPlacement();
                         if(placement != undefined) {
                             k.aiPlacement = placement;
                             this.hoverSprite(placement);
+                            k.aiChosen = true;
                         }
                         else {
                             this.pass();
@@ -298,9 +322,6 @@ MainState.prototype = {
             else {
                 this.hideHoverSprite();
             }
-        }
-        else {
-            this.startGame();
         }
     },
     closestPos: function() {
@@ -334,30 +355,31 @@ MainState.prototype = {
         });
         return captured;
     },
+    addNewSprite: function(position) {
+        let colour = k.currentPlayer == 0 ? 'black' : 'white';
+        let pos = k.placementPositions[position];
+        let newStone = game.add.sprite(pos[0], pos[1], colour);
+        newStone.scale.set(k.spriteScale, k.spriteScale);
+        k.placedSprites[position] = newStone;
+    },
+    captureStones: function(position) {
+        let colour = k.currentPlayer == 0 ? 'black' : 'white';
+        let anticolour = k.currentPlayer == 0 ? 'white' : 'black';
+        let captures = this.checkCaptures(position, colour, anticolour);
+        k.previouslyCaptured = [];
+        k.previouslyCaptured.push(...captures[0]);
+        k.previouslyCaptured.push(...captures[1]);
+        for(let i of k.previouslyCaptured) {
+            k.placedSprites[i].destroy();
+            k.placedSprites[i] = undefined;
+        }
+        k.capturedScore[k.currentPlayer] += k.previouslyCaptured.length;
+    },
     handleMouseUp: function() {
         if(k.hoveringStone) {
-            // add sprite
             let hej = this.closestPos();
-            let colour = k.currentPlayer == 0 ? 'black' : 'white';
-            let pos = k.placementPositions[hej];
-            let newStone = game.add.sprite(pos[0], pos[1], colour);
-            newStone.scale.set(k.spriteScale, k.spriteScale);
-            k.placedSprites[hej] = newStone;
-
-            // check for captures
-            let anticolour = k.currentPlayer == 0 ? 'white' : 'black';
-            let captures = this.checkCaptures(hej, colour, anticolour);
-            k.previouslyCaptured = [];
-            k.previouslyCaptured.push(...captures[0]);
-            k.previouslyCaptured.push(...captures[1]);
-            for(let i of k.previouslyCaptured) {
-                k.placedSprites[i].destroy();
-                k.placedSprites[i] = undefined;
-            }
-            
-            k.capturedScore[k.currentPlayer] += k.previouslyCaptured.length;
-
-            this.updatePermittedPlacements(hej);
+            this.addNewSprite(hej);
+            this.captureStones(hej);
 
             // update other stuff
             k.consecutivePasses = 0;
