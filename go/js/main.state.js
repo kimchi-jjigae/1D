@@ -170,7 +170,7 @@ MainState.prototype = {
     },
     changeTurn: function(previousPlacement) {
         this.hideHoverSprite();
-        this.updatePermittedPlacements();
+        this.updatePermittedPlacements(previousPlacement);
         k.currentPlayer = k.currentPlayer == 0 ? 1 : 0;
         k.previousPlacement = previousPlacement;
         let colour = k.currentPlayer == 0 ? 'Black' : 'White';
@@ -388,6 +388,7 @@ MainState.prototype = {
     },
     updatePermittedPlacements: function(previousPlacement) {
         dprint("updating permitted placements");
+        dprint("current player is " + k.currentPlayer);
         k.permittedPlacements.forEach((value, i) => {
             dprint(i);
             let permitted = true;
