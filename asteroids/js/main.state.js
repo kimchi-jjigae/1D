@@ -285,7 +285,7 @@ MainState.prototype = {
     gameOverF: function(text) {
         var gameOverText = game.add.text(game.world.width / 2, this.yPosition - 230, text,
             {font: '56px pixelbug', fill: '#ffffff'});
-        var highScoreText = game.add.text(game.world.width / 2, this.yPosition - 150, "High score: " + this.score, {font: '48px pixelbug', fill: '#ffffff'});
+        var highScoreText = game.add.text(game.world.width / 2, this.yPosition - 150, "High score: 7", {font: '48px pixelbug', fill: '#ffffff'});
         var scoreText = game.add.text(game.world.width / 2, this.yPosition - 60, "Your score: " + this.score, {font: '48px pixelbug', fill: '#ffffff'});
         util.recentreText(gameOverText);
         util.recentreText(scoreText);
