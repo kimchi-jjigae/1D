@@ -245,7 +245,7 @@ MainState.prototype = {
     create: function() {
         var bg = game.add.sprite(k.boardPos[0], k.boardPos[1], 'bg');
         bg.scale.set(k.spriteScale, k.spriteScale);
-        game.stage.backgroundColor = "#333333";
+        game.stage.backgroundColor = "#000000";
         game.scale.pageAlignHorizontally = true; game.scale.pageAlignVertically = true;
         game.stage.smoothed = false;
         game.input.mouse.mouseUpCallback = () => this.handleMouseUp(); // arrow function for correct `this`
