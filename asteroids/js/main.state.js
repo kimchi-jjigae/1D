@@ -1,5 +1,7 @@
 'use strict';
-// lol don't judge I wrote this as quickly as I could
+
+//TODO: wrapping 
+//TODO: remove bg and make black
 
 var game = new Phaser.Game(1366, 768, Phaser.AUTO, '', null, false, false);
 
@@ -128,51 +130,53 @@ MainState.prototype = {
         })
 
         game.input.keyboard.onDownCallback = function(event) {
-            if(keycodes.right.includes(event.key) || keycodes.up.includes(event.key)) {
-                self.thrusting = true;
-            }
-            if(keycodes.space.includes(event.key)) {
-                if(self.mayShoot()) {
-                    self.shoot();
+            if(!self.gameover) {
+                if(keycodes.right.includes(event.key) || keycodes.up.includes(event.key)) {
+                    self.thrusting = true;
                 }
-            }
-            else if(keycodes.restart.includes(event.key)) {
-                // R restart
-                ship.reset();
-                game.stage.backgroundColor = "#FFFFFF";
-                game.state.start('MainState');
+                if(keycodes.space.includes(event.key)) {
+                    if(self.mayShoot()) {
+                        self.shoot();
+                    }
+                }
+                else if(keycodes.restart.includes(event.key)) {
+                    // R restart
+                    ship.reset();
+                    game.stage.backgroundColor = "#FFFFFF";
+                    game.state.start('MainState');
+                }
             }
         };
         game.input.keyboard.onUpCallback = function(event) {
-            if(keycodes.right.includes(event.key) || keycodes.up.includes(event.key)) {
-                self.thrusting = false;
+            if(!self.gameover) {
+                if(keycodes.right.includes(event.key) || keycodes.up.includes(event.key)) {
+                    self.thrusting = false;
+                }
             }
         }
     },
     update: function() {
-        if(!this.gameover) {
-            ship.update();
-            this.shipSprite.position.x = ship.position;
-            if(this.thrusting) {
-                this.thrustSprite.position.x = this.shipSprite.position.x - 64;
-                this.thrustSprite.visible = true;
-                this.thrustSFX.play();
-                ship.thrust();
-            }
-            else {
-                this.thrustSprite.visible = false;
-            }
+        ship.update();
+        this.shipSprite.position.x = ship.position;
+        if(this.thrusting) {
+            this.thrustSprite.position.x = this.shipSprite.position.x - 64;
+            this.thrustSprite.visible = true;
+            this.thrustSFX.play();
+            ship.thrust();
+        }
+        else {
+            this.thrustSprite.visible = false;
+        }
 
-            this.updateBullets();
-            this.updateAsteroids();
-            this.updateCollisions();
+        this.updateBullets();
+        this.updateAsteroids();
+        this.updateCollisions();
 
-            if(this.checkWin()) {
-                this.win();
-            }
-            else if(this.checkLose()) {
-                this.lose();
-            }
+        if(this.checkWin()) {
+            this.win();
+        }
+        else if(this.checkLose()) {
+            this.lose();
         }
     },
     mayShoot: function() {
@@ -210,7 +214,7 @@ MainState.prototype = {
         var bulletsToDestroy = [];
         this.bullets.forEach(function(bullet) {
             asteroids.forEach(function(asteroid) {
-                if(bullet.x + 2 > asteroid.position - asteroid.radius) {
+                if(bullet.overlap(asteroid.sprite)) {
                     asteroidsToDestroy.push(asteroid);
                     bulletsToDestroy.push(bullet);
                 }
@@ -221,7 +225,7 @@ MainState.prototype = {
                 var a_1 = new Asteroid(asteroid.position, -1, 'asteroid_m');
                 a_1.sprite = self.createAsteroidSprite(a_1.position, a_1.yOffset, 'asteroid_m');
 
-                var a_2 = new Asteroid(asteroid.position, 1);
+                var a_2 = new Asteroid(asteroid.position, 1, 'asteroid_m');
                 a_2.sprite = self.createAsteroidSprite(a_2.position, a_2.yOffset, 'asteroid_m');
 
                 asteroids.push(a_1)
@@ -231,7 +235,7 @@ MainState.prototype = {
                 var a_1 = new Asteroid(asteroid.position, -1, 'asteroid_s');
                 a_1.sprite = self.createAsteroidSprite(a_1.position, a_1.yOffset, 'asteroid_s');
 
-                var a_2 = new Asteroid(asteroid.position, 1);
+                var a_2 = new Asteroid(asteroid.position, 1, 'asteroid_s');
                 a_2.sprite = self.createAsteroidSprite(a_2.position, a_2.yOffset, 'asteroid_s');
 
                 asteroids.push(a_1)
@@ -254,6 +258,21 @@ MainState.prototype = {
         bulletsToDestroy = [];
     },
     checkShipCollisions: function() {
+        var self = this;
+        this.bullets.forEach(function(bullet) {
+            // suicide
+        })
+        if(!this.shipDestroyed) {
+            asteroids.forEach(function(asteroid) {
+                if(self.shipSprite.overlap(asteroid.sprite)) {
+                    self.shipDestroyed = true;
+                }
+            })
+        }
+        if(this.shipDestroyed) {
+            this.shipSprite.destroy();
+            this.explosionSFX.play();
+        }
     },
     updateCollisions: function() {
         this.checkBulletCollisions();
@@ -263,17 +282,17 @@ MainState.prototype = {
         return this.shipDestroyed;
     },
     checkWin: function() {
-        return this.asteroidsDestroyed >= 7;
+        return asteroids.length == 0;
     },
     win: function() {
-        var gameOverText = game.add.text(game.world.width / 2, yPos, "YOU WIN!",
+        var gameOverText = game.add.text(game.world.width / 2, this.yPosition - 100, "YOU WIN!",
             {font: '56px pixelbug', fill: '#ffffff'});
         util.recentreText(gameOverText);
         this.gameover = true;
         this.winSFX.play();
     },
     lose: function(index) {
-        var gameOverText = game.add.text(game.world.width / 2, yPos, "YOU LOSE!",
+        var gameOverText = game.add.text(game.world.width / 2, this.yPosition - 100, "YOU LOSE!",
             {font: '56px pixelbug', fill: '#ffffff'});
         util.recentreText(gameOverText);
         this.gameover = true;
