@@ -1,23 +1,25 @@
 'use strict';
 
-//TODO: wrapping 
-//TODO: remove bg and make black
-
-var game = new Phaser.Game(1366, 768, Phaser.AUTO, '', null, false, false);
+var SCREEN_WIDTH = 1366;
+var game = new Phaser.Game(SCREEN_WIDTH, 768, Phaser.AUTO, '', null, false, false);
 
 var Ship = function() {};
 Ship.prototype = {
     speed: 0,
     acceleration: 0.05,
-    position: 43,
-    move: function() {
-        this.position += this.speed;
-    },
+    position: 0,
+    sprite: undefined,
+    wrapSprite: undefined,
     thrust: function() {
         this.speed += this.acceleration;
     },
     update: function() {
-        this.move();
+        this.position += this.speed;
+        if(this.position > SCREEN_WIDTH) { // wrapping rightwards
+            this.position = this.position - SCREEN_WIDTH;
+        }
+        this.sprite.position.x = this.position;
+        this.wrapSprite.position.x = this.position - SCREEN_WIDTH;
     },
     reset: function() {
         this.speed = 0;
@@ -25,9 +27,17 @@ Ship.prototype = {
     }
 };
 
+var Bullet = function(pos_x, pos_y, scale) {
+    this.sprite = game.add.sprite(pos_x, pos_y, 'bullet');
+    this.sprite.scale.set(scale, scale);
+    this.wrapSprite = game.add.sprite(pos_x, pos_y, 'bullet');
+    this.wrapSprite.scale.set(scale, scale);
+};
+
 var Asteroid = function(position, velocity, type) {
     this.type = type || 'asteroid_l';
     this.sprite = undefined;
+    this.wrapSprite = undefined; // for wrapping around the screen
     this.position = position;
     this.velocity = velocity;
     this.yOffset = 32;
@@ -42,32 +52,24 @@ var Asteroid = function(position, velocity, type) {
     }
 };
 Asteroid.prototype = {
-    move: function() {
-        this.position += this.velocity;
-    },
     update: function() {
-        this.move();
+        this.position += this.velocity;
+        if(this.position > SCREEN_WIDTH) { // wrapping rightwards
+            this.position = this.position - SCREEN_WIDTH;
+        }
         this.sprite.position.x = this.position;
+        this.wrapSprite.position.x = this.position - SCREEN_WIDTH;
     }
 };
-
-var ship = new Ship();
-var asteroids = [
-    new Asteroid(1000, -1),
-]
 
 var MainState = function() {};
 MainState.prototype = {
     worldLength: 20,
     tileSize: 64,
-    xOffset: 43,
     yPosition: (768 / 2) - 32,
     tileScale: undefined,
 
-    gameover: false,
-
-    blopp2SFX: undefined,
-
+    gameOver: false,
     thrusting: false,
 
     shootRate: 250, // time must pass between shots
@@ -75,12 +77,14 @@ MainState.prototype = {
     bullets: [],
     bulletSpeed: 5,
 
+    ship: new Ship(),
+    asteroids: [new Asteroid(1000, -1),],
+    score: 0,
     preload: function() {
         // allow the player to right click without the menu popping up
         game.canvas.oncontextmenu = function (e) { e.preventDefault(); }
 
         this.tileScale = this.tileSize / 16;
-        game.load.image('bg',         'assets/sprites/bg.png');
         game.load.image('asteroid_l', 'assets/sprites/asteroid_big.png');
         game.load.image('asteroid_m', 'assets/sprites/asteroid_med.png');
         game.load.image('asteroid_s', 'assets/sprites/asteroid_small.png');
@@ -107,30 +111,31 @@ MainState.prototype = {
     },
     create: function() {
         var self = this;
-        game.add.sprite(0, 0, 'bg');
-        game.stage.backgroundColor = "#AAAAAA";
+        game.stage.backgroundColor = "#000000";
         game.scale.pageAlignHorizontally = true;
         game.scale.pageAlignVertically = true;
 
         this.shootSFX = game.add.audio('blopp2');
-        this.thrustSFX = game.add.audio('thrust');
         this.explosionSFX = game.add.audio('explosion');
         this.winSFX = game.add.audio('thrust');
         this.loseSFX = game.add.audio('thrust');
 
-        this.shipSprite = game.add.sprite(ship.position + this.xOffset, this.yPosition, 'ship');
-        this.shipSprite.scale.set(this.tileScale, this.tileScale);
+        this.ship.sprite = game.add.sprite(this.ship.position, this.yPosition, 'ship');
+        this.ship.wrapSprite = game.add.sprite(this.ship.position, this.yPosition, 'ship');
+        this.ship.sprite.scale.set(this.tileScale, this.tileScale);
+        this.ship.wrapSprite.scale.set(this.tileScale, this.tileScale);
 
-        this.thrustSprite = game.add.sprite(ship.position + this.xOffset - 64, this.yPosition, 'thrust');
+        this.thrustSprite = game.add.sprite(this.ship.position - 64, this.yPosition, 'thrust');
         this.thrustSprite.scale.set(this.tileScale, this.tileScale);
         this.thrustSprite.visible = false;
 
-        asteroids.forEach(function(asteroid) {
+        this.asteroids.forEach(function(asteroid) {
             asteroid.sprite = self.createAsteroidSprite(asteroid.position, asteroid.yOffset, asteroid.type);
+            asteroid.wrapSprite = self.createAsteroidSprite(asteroid.position - SCREEN_WIDTH, asteroid.yOffset, asteroid.type);
         })
 
         game.input.keyboard.onDownCallback = function(event) {
-            if(!self.gameover) {
+            if(!self.gameOver) {
                 if(keycodes.right.includes(event.key) || keycodes.up.includes(event.key)) {
                     self.thrusting = true;
                 }
@@ -141,14 +146,14 @@ MainState.prototype = {
                 }
                 else if(keycodes.restart.includes(event.key)) {
                     // R restart
-                    ship.reset();
+                    this.ship.reset();
                     game.stage.backgroundColor = "#FFFFFF";
                     game.state.start('MainState');
                 }
             }
         };
         game.input.keyboard.onUpCallback = function(event) {
-            if(!self.gameover) {
+            if(!self.gameOver) {
                 if(keycodes.right.includes(event.key) || keycodes.up.includes(event.key)) {
                     self.thrusting = false;
                 }
@@ -156,27 +161,22 @@ MainState.prototype = {
         }
     },
     update: function() {
-        ship.update();
-        this.shipSprite.position.x = ship.position;
+        this.ship.update();
         if(this.thrusting) {
-            this.thrustSprite.position.x = this.shipSprite.position.x - 64;
+            this.thrustSprite.position.x = this.ship.sprite.position.x - 64;
             this.thrustSprite.visible = true;
-            this.thrustSFX.play();
-            ship.thrust();
+            this.ship.thrust();
         }
         else {
             this.thrustSprite.visible = false;
         }
-
         this.updateBullets();
         this.updateAsteroids();
-        this.updateCollisions();
 
-        if(this.checkWin()) {
-            this.win();
-        }
-        else if(this.checkLose()) {
-            this.lose();
+        if(!this.gameOver) {
+            this.updateCollisions();
+            if(this.checkWin()) { this.gameOverF("YOU WIN!"); }
+            else if(this.checkLose()) { this.gameOverF("YOU LOSE!"); }
         }
     },
     mayShoot: function() {
@@ -188,24 +188,22 @@ MainState.prototype = {
         return ja;
     },
     shoot: function() {
-        var bullet = game.add.sprite(ship.position + 60, this.yPosition + 28, 'bullet');
-        bullet.scale.set(this.tileScale, this.tileScale);
-        this.bullets.push(bullet);
+        this.bullets.push(new Bullet(this.ship.position + 60, this.yPosition + 28, this.tileScale));
         this.shootSFX.play();
     },
     updateAsteroids: function() {
-        var self = this;
-        asteroids.forEach(function(asteroid) {
+        this.asteroids.forEach(function(asteroid) {
             asteroid.update();
         })
     },
     updateBullets: function() {
         var self = this;
         this.bullets.forEach(function(bullet) {
-            bullet.position.x += self.bulletSpeed;
-            if(bullet.position.x > 1500) {
-                // clear
+            bullet.sprite.position.x += self.bulletSpeed;
+            if(bullet.sprite.position.x > SCREEN_WIDTH) { // wrapping rightwards
+                bullet.sprite.position.x = bullet.sprite.position.x - SCREEN_WIDTH;
             }
+            bullet.wrapSprite.position.x = bullet.sprite.position.x - SCREEN_WIDTH;
         })
     },
     checkBulletCollisions: function() {
@@ -213,64 +211,64 @@ MainState.prototype = {
         var asteroidsToDestroy = [];
         var bulletsToDestroy = [];
         this.bullets.forEach(function(bullet) {
-            asteroids.forEach(function(asteroid) {
-                if(bullet.overlap(asteroid.sprite)) {
+            self.asteroids.forEach(function(asteroid) {
+                if(bullet.sprite.overlap(asteroid.sprite) || bullet.wrapSprite.overlap(asteroid.sprite)) {
                     asteroidsToDestroy.push(asteroid);
                     bulletsToDestroy.push(bullet);
                 }
             })
         })
         asteroidsToDestroy.forEach(function(asteroid) {
+            self.score++;
             if(asteroid.type == 'asteroid_l') {
                 var a_1 = new Asteroid(asteroid.position, -1, 'asteroid_m');
                 a_1.sprite = self.createAsteroidSprite(a_1.position, a_1.yOffset, 'asteroid_m');
+                a_1.wrapSprite = self.createAsteroidSprite(a_1.position - SCREEN_WIDTH, a_1.yOffset, 'asteroid_m');
 
                 var a_2 = new Asteroid(asteroid.position, 1, 'asteroid_m');
                 a_2.sprite = self.createAsteroidSprite(a_2.position, a_2.yOffset, 'asteroid_m');
+                a_2.wrapSprite = self.createAsteroidSprite(a_2.position - SCREEN_WIDTH, a_2.yOffset, 'asteroid_m');
 
-                asteroids.push(a_1)
-                asteroids.push(a_2)
+                self.asteroids.push(a_1)
+                self.asteroids.push(a_2)
             }
             else if(asteroid.type == 'asteroid_m') {
                 var a_1 = new Asteroid(asteroid.position, -1, 'asteroid_s');
                 a_1.sprite = self.createAsteroidSprite(a_1.position, a_1.yOffset, 'asteroid_s');
+                a_1.wrapSprite = self.createAsteroidSprite(a_1.position - SCREEN_WIDTH, a_1.yOffset, 'asteroid_s');
 
                 var a_2 = new Asteroid(asteroid.position, 1, 'asteroid_s');
                 a_2.sprite = self.createAsteroidSprite(a_2.position, a_2.yOffset, 'asteroid_s');
+                a_2.wrapSprite = self.createAsteroidSprite(a_2.position - SCREEN_WIDTH, a_2.yOffset, 'asteroid_s');
 
-                asteroids.push(a_1)
-                asteroids.push(a_2)
-            }
-            else if(asteroid.type == 'asteroid_s') {
-                self.asteroidsDestroyed++;
+                self.asteroids.push(a_1)
+                self.asteroids.push(a_2)
             }
             asteroid.sprite.destroy();
-            var index = asteroids.indexOf(asteroid);
-            asteroids.splice(index, 1);
+            self.asteroids.splice(self.asteroids.indexOf(asteroid), 1);
             self.explosionSFX.play();
         })
         asteroidsToDestroy = [];
         bulletsToDestroy.forEach(function(bullet) {
             var index = self.bullets.indexOf(bullet);
             self.bullets.splice(index, 1);
-            bullet.destroy();
+            bullet.sprite.destroy();
+            bullet.wrapSprite.destroy();
         })
         bulletsToDestroy = [];
     },
     checkShipCollisions: function() {
         var self = this;
-        this.bullets.forEach(function(bullet) {
-            // suicide
-        })
         if(!this.shipDestroyed) {
-            asteroids.forEach(function(asteroid) {
-                if(self.shipSprite.overlap(asteroid.sprite)) {
+            this.asteroids.forEach(function(asteroid) {
+                if(self.ship.sprite.overlap(asteroid.sprite) || self.ship.wrapSprite.overlap(asteroid.sprite)) {
                     self.shipDestroyed = true;
                 }
             })
         }
         if(this.shipDestroyed) {
-            this.shipSprite.destroy();
+            this.ship.sprite.destroy();
+            this.ship.wrapSprite.destroy();
             this.explosionSFX.play();
         }
     },
@@ -282,21 +280,19 @@ MainState.prototype = {
         return this.shipDestroyed;
     },
     checkWin: function() {
-        return asteroids.length == 0;
+        return this.asteroids.length == 0;
     },
-    win: function() {
-        var gameOverText = game.add.text(game.world.width / 2, this.yPosition - 100, "YOU WIN!",
+    gameOverF: function(text) {
+        var gameOverText = game.add.text(game.world.width / 2, this.yPosition - 230, text,
             {font: '56px pixelbug', fill: '#ffffff'});
+        var highScoreText = game.add.text(game.world.width / 2, this.yPosition - 150, "High score: " + this.score, {font: '48px pixelbug', fill: '#ffffff'});
+        var scoreText = game.add.text(game.world.width / 2, this.yPosition - 60, "Your score: " + this.score, {font: '48px pixelbug', fill: '#ffffff'});
         util.recentreText(gameOverText);
-        this.gameover = true;
-        this.winSFX.play();
-    },
-    lose: function(index) {
-        var gameOverText = game.add.text(game.world.width / 2, this.yPosition - 100, "YOU LOSE!",
-            {font: '56px pixelbug', fill: '#ffffff'});
-        util.recentreText(gameOverText);
-        this.gameover = true;
-        this.loseSFX.play();
+        util.recentreText(scoreText);
+        util.recentreText(highScoreText);
+
+        this.gameOver = true;
+        this.thrustSprite.destroy();
     },
 };
 
