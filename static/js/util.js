@@ -40,5 +40,5 @@ var util = {
             text.x = text.x - text.width;
         else
             text.x = rightBoundary - text.width;
-    }
+    },
 };

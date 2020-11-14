@@ -62,24 +62,24 @@ MainState.prototype = {
     blopp: undefined,
     gameoverSFX: undefined,
     preload: function() {
-        game.load.image('head', 'assets/sprites/snakehead.png');
-        game.load.image('snake', 'assets/sprites/snake.png');
-        game.load.image('apple', 'assets/sprites/apple.png');
-        game.load.image('bg', 'assets/sprites/bg.png');
+        game.load.image('head',  getSpritePath('snakehead'));
+        game.load.image('snake', getSpritePath('snake'));
+        game.load.image('apple', getSpritePath('apple'));
+        game.load.image('bg',    getSpritePath('bg'));
 
-        game.load.audio('blopp', 'assets/sfx/blopp1.wav');
-        game.load.audio('gameover', 'assets/sfx/gameover.wav');
+        game.load.audio('blopp',    getSfxPath('blopp1'));
+        game.load.audio('gameover', getSfxPath('gameover'));
 
         this.snakeBits = game.add.group();
 
-	    game.load.script('utilScript',          '../js/util.js');
-	    game.load.script('directionEnumScript', '../js/direction.enum.js');
-	    game.load.script('keycodesScript',      '../js/keycodes.js');
-        game.add.text(0, 0, "", {font: '56px pixelbug', fill: '#ffffff'});
+	    game.load.script('utilScript', getScriptPath('util'));
+	    game.load.script('directionEnumScript', getScriptPath('direction.enum'));
+	    game.load.script('keycodesScript',      getScriptPath('keycodes'));
+        game.add.text(0, 0, "", textStyle.large);
     },
     create: function() {
         game.add.sprite(0, 0, 'bg');
-        game.stage.backgroundColor = "#FFFFFF";
+        game.stage.backgroundColor = colour.bg;
         game.scale.pageAlignHorizontally = true;  game.scale.pageAlignVertically = true;
         var tileScale = this.tileSize / 16;
 
@@ -109,11 +109,11 @@ MainState.prototype = {
                 self.gameOver = false;
                 self.scoreText.text = "Score: " + self.score;
                 self.scoreText.visible = true;
-                game.stage.backgroundColor = "#FFFFFF";
+                game.stage.backgroundColor = colour.bg;
                 game.state.start('MainState');
             }
         };
-        this.scoreText = game.add.text(0, 0, "Score: 0", {font: '56px pixelbug', fill: '#ffffff'});
+        this.scoreText = game.add.text(0, 0, "Score: 0", textStyle.large);
         game.stage.smoothed = false;
     },
     update: function() {
@@ -127,9 +127,9 @@ MainState.prototype = {
             if(this.eatTail()) {
                 var yPos = 150;
                 this.scoreText.visible = false;
-                var gameOverText = game.add.text(game.world.width / 2, yPos, "GAME OVER", {font: '56px pixelbug', fill: '#ffffff'});
-                var highScoreText = game.add.text(game.world.width / 2, yPos + 80, "High score: " + this.score, {font: '48px pixelbug', fill: '#ffffff'});
-                var scoreText = game.add.text(game.world.width / 2, yPos + 160, "Your score: " + this.score, {font: '48px pixelbug', fill: '#ffffff'});
+                var gameOverText = game.add.text(game.world.width / 2, yPos, "GAME OVER", textStyle.large);
+                var highScoreText = game.add.text(game.world.width / 2, yPos + 80, "High score: " + this.score, textStyle.medium);
+                var scoreText = game.add.text(game.world.width / 2, yPos + 160, "Your score: " + this.score, textStyle.medium);
                 util.recentreText(gameOverText);
                 util.recentreText(scoreText);
                 util.recentreText(highScoreText);

@@ -1,0 +1,30 @@
+@font-face
+{
+    font-family: pixelbug;
+    src: url('../fonts/pixel_bug.otf') format("opentype");
+}
+@font-face
+{
+    /*
+    VCR OSD Mono by Riciery Leal
+    https://www.dafont.com/vcr-osd-mono.font
+    */
+    font-family: vcrosdmono;
+    src: url('../fonts/VCR_OSD_MONO_1.001.ttf') format("truetype");
+}
+
+html {
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: black;
+}
+
+canvas {
+    display: block;
+    margin: auto 0;
+}
