@@ -41,11 +41,10 @@ const util = {
         else
             text.x = rightBoundary - text.width;
     },
-    createTileBg: function(gameGroup, length, spriteName, tileSize, tileScale, xOffset, yOffset) {
+    createTileBg: function(gameGroup, length, spriteName, tileSize, xOffset, yOffset) {
         for(var i = 0; i < length; ++i) {
             const x = i * tileSize + world.xOffset;
             tile = gameGroup.create(x, yOffset, spriteName);
-            tile.scale.set(tileScale, tileScale);
         }
     }
 };

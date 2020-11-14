@@ -1,3 +1,16 @@
+/*
+    bg:        '#091f34', // dark blue
+    fg:        '#fdfdfd',
+    white:     '#fdfdfd',
+    pink:      '#fc8cc0',
+    red:       '#fd2970',
+    orange:    '#fd8e25',
+    yellow:    '#f2e31d',
+    green:     '#7efebe',
+    lightBlue: '#6ee5fd',
+    darkBlue:  '#2c6795',
+*/
+
 @font-face
 {
     /*
@@ -9,6 +22,7 @@
 }
 
 html {
+    font-family: vcrosdmono, sans;
     overflow-x: hidden;
     overflow-y: hidden;
 }
@@ -22,4 +36,31 @@ body {
 canvas {
     display: block;
     margin: auto 0;
+}
+
+header {
+    top: 0;
+    left: 0;
+    margin: 0;
+    padding: 20px;
+    position: fixed;
+}
+
+a, a:visited, a:hover {
+    color: #6ee5fd;
+}
+a:hover {
+    text-decoration: none;
+}
+
+@media screen and (orientation: portrait) {
+  html {
+    transform: rotate(-90deg);
+    transform-origin: left top;
+    width: 100vh;
+    height: 100vw;
+    position: absolute;
+    top: 100%;
+    left: 0;
+  }
 }

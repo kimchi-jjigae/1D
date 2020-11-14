@@ -34,14 +34,20 @@ const textStyle = {
         font: '48px vcrosdmono',
         fill: colour.fg
     },
+    small: {
+        font: '40px vcrosdmono',
+        fill: colour.fg
+    },
 };
 
 const world = {
-    w: 1366,
-    h: 768,
+    //w: 1366,
+    //h: 768,
+    w: 341.5,
+    h: 192,
     length: 20, // number of tiles wide
-    tileSize: 64,
-    tileScale: 4, // assume all tile PNGs are 16x16
-    xOffset: (1366 / 20) / 2 + 16, // idk lol
-    yOffset: (768 / 2) - 32,
+    //tileSize: 64,
+    tileSize: 16,
+    xOffset: (341.5 / 20) / 2 + 16, // idk lol
+    yOffset: (192 / 2) - 32,
 };
