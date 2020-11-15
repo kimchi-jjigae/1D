@@ -1,14 +1,14 @@
 :root {
-    --clr-bg:        '#091f34';
-    --clr-fg:        '#fdfdfd';
-    --clr-white:     '#fdfdfd';
-    --clr-pink:      '#fc8cc0';
-    --clr-red:       '#fd2970';
-    --clr-orange:    '#fd8e25';
-    --clr-yellow:    '#f2e31d';
-    --clr-green:     '#7efebe';
-    --clr-lightBlue: '#6ee5fd';
-    --clr-darkBlue:  '#2c6795';
+    --clr-bg:        #091f34;
+    --clr-fg:        #fdfdfd;
+    --clr-white:     #fdfdfd;
+    --clr-pink:      #fc8cc0;
+    --clr-red:       #fd2970;
+    --clr-orange:    #fd8e25;
+    --clr-yellow:    #f2e31d;
+    --clr-green:     #7efebe;
+    --clr-lightBlue: #6ee5fd;
+    --clr-darkBlue:  #2c6795;
 }
 
 @font-face
@@ -30,7 +30,7 @@ html {
 body {
     margin: 0;
     padding: 0;
-    background-color: var(--clr-pink);
+    background-color: var(--clr-bg);
 }
 
 canvas {
@@ -42,8 +42,20 @@ header {
     top: 0;
     left: 0;
     margin: 0;
-    padding: 20px;
+    padding: 10px;
     position: fixed;
+    font-size: 1.5rem;
+}
+
+@media (pointer: coarse) and (orientation: portrait) {
+    header {
+        transform: rotate(-90deg);
+        transform-origin: top left;
+        top: 100%;
+        left: 0;
+        padding: 20px;
+        font-size: 2.5rem;
+    }
 }
 
 a, a:visited, a:hover {
@@ -51,16 +63,4 @@ a, a:visited, a:hover {
 }
 a:hover {
     text-decoration: none;
-}
-
-@media (hover:none) and (orientation: portrait) {
-  html {
-    transform: rotate(-90deg);
-    transform-origin: left top;
-    width: 100vh;
-    height: 100vw;
-    position: absolute;
-    top: 100%;
-    left: 0;
-  }
 }

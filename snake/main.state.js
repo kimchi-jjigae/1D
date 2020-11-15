@@ -1,4 +1,5 @@
 'use strict';
+console.log("asdflkasjflksdj");
 
 var game = new Phaser.Game("100%", "100%", Phaser.AUTO, '', null, false, false);
 
@@ -102,6 +103,7 @@ MainState.prototype = {
         this.sceneGroup = game.add.group();
         this.bgTiles = game.add.group();
         this.snakeBits = game.add.group();
+        this.snakeBits.classType = Phaser.Image;
 
         util.createTileBg(this.bgTiles, world.length, 'bgtile', world.tileSize, 0);
         var bit = this.snakeBits.create((snake.position) * world.tileSize, 0, 'head');
@@ -109,7 +111,7 @@ MainState.prototype = {
             bit = this.snakeBits.create((snake.position - i) * world.tileSize, 0, 'snake');
         }
         flasher.make(this.snakeBits);
-        this.appleBit = game.add.sprite(apple.position * world.tileSize, 0, 'apple');
+        this.appleBit = game.add.image(apple.position * world.tileSize, 0, 'apple');
 
         this.sceneGroup.addChild(this.bgTiles);
         this.sceneGroup.addChild(this.snakeBits);
@@ -156,20 +158,39 @@ MainState.prototype = {
         this.scaleUiGroup();
     },
     scaleSceneGroup: function() {
-        const maxWidth = game.world.width - (2 * world.xMargin);
-        const tileSize = Math.trunc(maxWidth / world.length);
-        const tileScale = tileSize / world.tileSize;
-        // this could be simpler but I cbf thinking right now:
-        const xOffset = ((maxWidth - (tileSize * world.length)) / 2) + world.xMargin;
-        this.sceneGroup.x = xOffset;
-        this.sceneGroup.y = game.world.height / 2;
-        this.sceneGroup.scale.set(tileScale, tileScale);
+        // force landscape if on a mobile device
+        if(util.deviceInPortraitMode(game)) {
+            const maxWidth = game.world.height - (2 * world.xMargin);
+            const tileSize = Math.trunc(maxWidth / world.length);
+            const tileScale = tileSize / world.tileSize;
+            this.sceneGroup.x = game.world.width / 2;
+            this.sceneGroup.y = game.world.height - world.xMargin;
+            this.sceneGroup.scale.set(tileScale, tileScale);
+            this.sceneGroup.angle = -90;
+        }
+        else {
+            const maxWidth = game.world.width - (2 * world.xMargin);
+            const tileSize = Math.trunc(maxWidth / world.length);
+            const tileScale = tileSize / world.tileSize;
+            // this could be simpler but I cbf thinking right now:
+            const xOffset = ((maxWidth - (tileSize * world.length)) / 2) + world.xMargin;
+            this.sceneGroup.x = xOffset;
+            this.sceneGroup.y = game.world.height / 2;
+            this.sceneGroup.scale.set(tileScale, tileScale);
+            this.sceneGroup.angle = 0;
+        }
     },
     scaleUiGroup: function() {
         let large = 56;
         let small = 40;
         let spacing = 60;
-        if(game.world.width < 800) {
+        if(util.deviceInPortraitMode(game)) {
+            large = 70;
+            small = 44;
+            spacing = 70;
+            console.log("blarpp");
+        }
+        else if(game.world.width < 800 && !util.deviceInPortraitMode(game)) {
             large = 24;
             small = 16;
             spacing = 28;
@@ -190,11 +211,26 @@ MainState.prototype = {
         var yPos = world.yMargin;
         var xPos = game.world.width / 2;
 
+        if(util.deviceInPortraitMode(game)) {
+            this.uiGroup.angle = -90;
+            this.uiGroup.y = game.world.height - world.xMargin;
+            xPos = game.world.height / 2;
+            yPos = world.yMargin * 2;
+            this.restartButton.scale.set(2, 2);
+        }
+        else {
+            this.uiGroup.angle = 0;
+            this.uiGroup.y = 0;
+            this.restartButton.scale.set(1, 1);
+        }
+
         util.recentreText(this.gameOverText,  xPos, yPos);
         util.recentreText(this.highScoreText, xPos, yPos + spacing);
         util.recentreText(this.endScoreText,  xPos, yPos + spacing * 2);
         util.recentreText(this.restartButton, xPos, yPos + spacing * 3);
+        this.scoreText.y = yPos;
         this.scoreNumberText.x = this.scoreText.width;
+        this.scoreNumberText.y = this.scoreText.y;
     },
     rescale: function() {
         this.scaleSceneGroup();
@@ -269,6 +305,7 @@ MainState.prototype = {
                     this.appleBit.destroy();
                 }
             }
+            //util.checkCanvasSize(game);
         }
         else if(this.gameOver) {
             flasher.update(this.snakeBits);
@@ -286,8 +323,14 @@ MainState.prototype = {
 
         this.highScoreText.text = "High score: " + this.score;
         this.endScoreText.text = "Your score: " + this.score;
-        util.recentreText(this.highScoreText, game.world.width / 2);
-        util.recentreText(this.endScoreText, game.world.width / 2);
+        if(util.deviceInPortraitMode(game)) {
+            util.recentreText(this.highScoreText, game.world.height / 2);
+            util.recentreText(this.endScoreText, game.world.height / 2);
+        }
+        else {
+            util.recentreText(this.highScoreText, game.world.width / 2);
+            util.recentreText(this.endScoreText, game.world.width / 2);
+        }
 
         this.snakeBits.children[0].loadTexture('headdead');
         flasher.start(this.snakeBits);

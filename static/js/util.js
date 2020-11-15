@@ -42,6 +42,16 @@ const util = {
             tile = gameGroup.create(x, yOffset, spriteName);
         }
     },
+    deviceInPortraitMode: function(game) {
+        return !game.device.desktop && game.scale.screenOrientation == "portrait-primary";
+    },
+    calculateTileScale: function(maxWidth, world) {
+        const tileSize = Math.trunc(maxWidth / world.length);
+        return tileSize / world.tileSize;
+    },
+    checkCanvasSize: function(game) {
+        /* just in case bla */
+    },
 };
 
 const flasher = {
