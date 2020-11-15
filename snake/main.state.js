@@ -1,5 +1,4 @@
 'use strict';
-console.log("asdflkasjflksdj");
 
 var game = new Phaser.Game("100%", "100%", Phaser.AUTO, '', null, false, false);
 
@@ -66,8 +65,9 @@ MainState.prototype = {
     score: 0,
     gameOver: false,
 
-    blopp: undefined,
-    gameoverSFX: undefined,
+    bloppSfx: undefined,
+    pickupSfx: undefined,
+    gameoverSfx: undefined,
 
     preload: function() {
         /* load all assets here */
@@ -78,12 +78,10 @@ MainState.prototype = {
         game.load.image('bgtile',    getSpritePath('bgtile'));
         game.load.spritesheet('button', getSpritePath('button-200x60'), 200, 60, 2);
 
-        game.load.audio('blopp',    getSfxPath('blopp1'));
+        game.load.audio('blopp',    getSfxPath('move'));
+        game.load.audio('pickup',    getSfxPath('pickup'));
         game.load.audio('gameover', getSfxPath('gameover'));
 
-	    game.load.script('utilScript', getScriptPath('util'));
-	    game.load.script('directionEnumScript', getScriptPath('direction.enum'));
-	    game.load.script('keycodesScript',      getScriptPath('keycodes'));
         // necessary for loading the font:
         game.add.text(0, 0, "", textStyle.fg(56));
     },
@@ -258,8 +256,9 @@ MainState.prototype = {
         this.createUiSprites();
 
         /* sfx */
-        this.blopp = game.add.audio('blopp');
-        this.gameoverSFX = game.add.audio('gameover');
+        this.bloppSfx = game.add.audio('blopp', 0.5);
+        this.pickupSfx = game.add.audio('pickup', 0.3);
+        this.gameoverSfx = game.add.audio('gameover');
 
         /* input */
         game.input.onTap.add(function() { this.lastTicked = 0; }, this);
@@ -278,6 +277,7 @@ MainState.prototype = {
     update: function() {
         if(this.timeToTick() && !this.gameOver) {
             snake.position++;
+            this.bloppSfx.play();
             for(var i = 0; i < this.snakeBits.length; ++i) {
                 var bit = this.snakeBits.children[i];
                 var pos = (snake.position - i) % world.length;
@@ -295,7 +295,7 @@ MainState.prototype = {
                 var pos = (snake.position - snake.length + 1) % world.length;
                 var bit = this.snakeBits.create(pos * world.tileSize, world.yOffset, 'snake');
 
-                //this.blopp.play();
+                this.pickupSfx.play();
 
                 if(snake.length < world.length) {
                     apple.respawn(snake.position, snake.length, world.length);
@@ -305,7 +305,6 @@ MainState.prototype = {
                     this.appleBit.destroy();
                 }
             }
-            //util.checkCanvasSize(game);
         }
         else if(this.gameOver) {
             flasher.update(this.snakeBits);
@@ -335,7 +334,7 @@ MainState.prototype = {
         this.snakeBits.children[0].loadTexture('headdead');
         flasher.start(this.snakeBits);
 
-        //this.gameoverSFX.play();
+        this.gameoverSfx.play();
     },
     timeToTick: function() {
         var itIsTime = false;
