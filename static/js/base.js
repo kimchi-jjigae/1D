@@ -25,24 +25,20 @@ const colour = {
     darkBlue:  '#2c6795',
 }
 
+
 const textStyle = {
-    large: {
-        font: '56px vcrosdmono',
-        fill: colour.fg,
-    },
-    medium: {
-        font: '48px vcrosdmono',
-        fill: colour.fg
-    },
-    small: {
-        font: '40px vcrosdmono',
-        fill: colour.fg
-    },
+    fg: function(size) {
+        return {
+            font: 'vcrosdmono',
+            fill: colour.fg,
+            fontSize: size,
+        }
+    }
 };
 
 const world = {
     length: 20, // number of tiles wide
-    tileSize: 16,
-    xOffset: (341.5 / 20) / 2 + 16, // idk lol
-    yOffset: (192 / 2) - 32,
+    tileSize: 16, // of the sprites
+    xMargin: 10,
+    yMargin: 50,
 };

@@ -25,15 +25,10 @@ const util = {
     randomBool: function() {
         return util.randomInt(0, 2);
     },
-    recentreText: function(text, position) {
-        if(position == undefined) {
-            text.x = text.x - text.width / 2;
-            text.y = text.y - text.height / 2;
-        }
-        else {
-            text.x = position.x - text.width / 2;
-            text.y = position.y - text.height / 2;
-        }
+    recentreText: function(text, x, y) {
+        const halfTextWidth = text.width / 2;
+        text.x = x ? x - halfTextWidth : text.x - halfTextWidth;
+        text.y = y ? y : text.y;
     },
     rightAlignText: function(text, rightBoundary) {
         if(rightBoundary == undefined)
@@ -41,10 +36,10 @@ const util = {
         else
             text.x = rightBoundary - text.width;
     },
-    createTileBg: function(gameGroup, length, spriteName, tileSize, xOffset, yOffset) {
+    createTileBg: function(gameGroup, length, spriteName, tileSize, yOffset) {
         for(var i = 0; i < length; ++i) {
-            const x = i * tileSize + world.xOffset;
+            const x = i * tileSize;
             tile = gameGroup.create(x, yOffset, spriteName);
         }
-    }
+    },
 };

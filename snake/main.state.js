@@ -82,7 +82,7 @@ MainState.prototype = {
 	    game.load.script('directionEnumScript', getScriptPath('direction.enum'));
 	    game.load.script('keycodesScript',      getScriptPath('keycodes'));
         // necessary for loading the font:
-        game.add.text(0, 0, "", textStyle.large);
+        game.add.text(0, 0, "", textStyle.fg(56));
     },
     restart: function() {
         this.score = 0;
@@ -93,6 +93,7 @@ MainState.prototype = {
 
         this.createSceneSprites();
         this.createUiSprites();
+        this.rescale();
     },
     createSceneSprites: function() {
         if(this.sceneGroup) this.sceneGroup.destroy();
@@ -100,31 +101,27 @@ MainState.prototype = {
         this.bgTiles = game.add.group();
         this.snakeBits = game.add.group();
 
-        util.createTileBg(this.bgTiles, world.length, 'bgtile', world.tileSize, world.xOffset, world.yOffset);
-        var bit = this.snakeBits.create((snake.position) * world.tileSize + world.xOffset, world.yOffset, 'head');
+        util.createTileBg(this.bgTiles, world.length, 'bgtile', world.tileSize, 0);
+        var bit = this.snakeBits.create((snake.position) * world.tileSize, 0, 'head');
         for(var i = 1; i < snake.length; ++i) {
-            bit = this.snakeBits.create((snake.position - i) * world.tileSize + world.xOffset, world.yOffset, 'snake');
+            bit = this.snakeBits.create((snake.position - i) * world.tileSize, 0, 'snake');
         }
-        this.appleBit = game.add.sprite(apple.position * world.tileSize + world.xOffset, world.yOffset, 'apple');
+        this.appleBit = game.add.sprite(apple.position * world.tileSize, 0, 'apple');
 
         this.sceneGroup.addChild(this.bgTiles);
         this.sceneGroup.addChild(this.snakeBits);
         this.sceneGroup.addChild(this.appleBit);
-        this.sceneGroup.scale.set(4, 4);
+        this.scaleSceneSprites();
     },
     createUiSprites: function() {
         if(this.uiGroup) this.uiGroup.destroy();
         this.uiGroup = game.add.group();
 
-        var yPos = 100;
-        var xPos = game.world.width / 2;
-        this.scoreText = game.add.text(world.xOffset, yPos, "Score: 0", textStyle.large);
-        this.gameOverText = game.add.text(xPos, yPos, "GAME OVER!", textStyle.large);
-        this.highScoreText = game.add.text(xPos, yPos + 60, "High score: ", textStyle.small);
-        this.endScoreText = game.add.text(xPos, yPos + 120, "Your score: ", textStyle.small);
-        this.restartButton = game.add.button(xPos, yPos + 180, 'button', this.restart, this, 1, 0, 1);
-        util.recentreText(this.gameOverText);
-        util.recentreText(this.restartButton);
+        this.scoreText = game.add.text(world.xMargin, world.yMargin, "Score: 0", textStyle.fg(56));
+        this.gameOverText = game.add.text(0, 0, "GAME OVER!", textStyle.fg(56));
+        this.highScoreText = game.add.text(0, 0, "High score: ", textStyle.fg(32));
+        this.endScoreText = game.add.text(0, 0, "Your score: ", textStyle.fg(32));
+        this.restartButton = game.add.button(0, 0, 'button', this.restart, this, 1, 0, 1);
 
         this.gameOverText.visible = false;
         this.highScoreText.visible = false;
@@ -136,29 +133,58 @@ MainState.prototype = {
         this.uiGroup.addChild(this.highScoreText);
         this.uiGroup.addChild(this.endScoreText);
         this.uiGroup.addChild(this.restartButton);
-        //this.uiGroup.scale.set(4, 4);
+        this.scaleUiSprites();
     },
-/*
+    scaleSceneSprites: function() {
+        const maxWidth = game.world.width - (2 * world.xMargin);
+        const tileSize = Math.trunc(maxWidth / world.length);
+        const tileScale = tileSize / world.tileSize;
+        // this could be simpler but I cbf thinking right now:
+        const xOffset = ((maxWidth - (tileSize * world.length)) / 2) + world.xMargin;
+        this.sceneGroup.x = xOffset;
+        this.sceneGroup.y = game.world.height / 2;
+        this.sceneGroup.scale.set(tileScale, tileScale);
+    },
+    scaleUiSprites: function() {
+        let large = 56;
+        let small = 40;
+        let spacing = 60;
+        if(game.world.width < 800) {
+            large = 24;
+            small = 16;
+            spacing = 28;
+        }
+        else if(game.world.width < 1200) {
+            large = 40;
+            small = 28;
+            spacing = 44;
+        }
+        this.scoreText.setStyle(textStyle.fg(large));
+        this.gameOverText.setStyle(textStyle.fg(large));
+        this.highScoreText.setStyle(textStyle.fg(small));
+        this.endScoreText.setStyle(textStyle.fg(small));
+
+        var yPos = world.yMargin;
+        var xPos = game.world.width / 2;
+
+        util.recentreText(this.gameOverText,  xPos, yPos);
+        util.recentreText(this.highScoreText, xPos, yPos + spacing);
+        util.recentreText(this.endScoreText,  xPos, yPos + spacing * 2);
+        util.recentreText(this.restartButton, xPos, yPos + spacing * 3);
+    },
     rescale: function() {
-        // the game doesn't resize reight away, so we need to delay here
-        setTimeout(function() {
-            game.scale.orientationSprite.scale.set(game.game.width / game.scale.width, game.game.height / game.scale.height);
-        }, 100);   
+        this.scaleSceneSprites();
+        this.scaleUiSprites();
     },
-*/
     create: function() {
         /* set up game objects here */
         // Maintain aspect ratio & center    
         //game.scale.forceOrientation(true);
-        //game.scale.scaleMode = Phaser.ScaleManager.RESIZE;
+        game.scale.scaleMode = Phaser.ScaleManager.RESIZE;
         game.scale.pageAlignHorizontally = true;
         game.scale.pageAlignVertically = true;
-/*
-        if (!game.device.desktop) {
-            game.scale.forceOrientation(false, true, 'orientation');
-            game.scale.enterIncorrectOrientation.add(this.rescale);
-        }
-*/
+        game.scale.onSizeChange.add(this.rescale, this);
+
         /* scene sprites */
         game.stage.backgroundColor = colour.bg;
         game.stage.smoothed = false;
@@ -191,7 +217,7 @@ MainState.prototype = {
             for(var i = 0; i < this.snakeBits.length; ++i) {
                 var bit = this.snakeBits.children[i];
                 var pos = (snake.position - i) % world.length;
-                bit.position.x = pos * world.tileSize + world.xOffset;
+                bit.position.x = pos * world.tileSize;
             }
             if(!this.gameOver && this.eatTail()) {
                 this.gameOver = true;
@@ -202,8 +228,8 @@ MainState.prototype = {
 
                 this.highScoreText.text = "High score: " + this.score;
                 this.endScoreText.text = "Your score: " + this.score;
-                util.recentreText(this.highScoreText);
-                util.recentreText(this.endScoreText);
+                util.recentreText(this.highScoreText, game.world.width / 2);
+                util.recentreText(this.endScoreText, game.world.width / 2);
 
                 //this.gameoverSFX.play();
             }
@@ -213,13 +239,13 @@ MainState.prototype = {
 
                 snake.grow();
                 var pos = (snake.position - snake.length + 1) % world.length;
-                var bit = this.snakeBits.create(pos * world.tileSize + world.xOffset, world.yOffset, 'snake');
+                var bit = this.snakeBits.create(pos * world.tileSize, world.yOffset, 'snake');
 
                 //this.blopp.play();
 
                 if(snake.length < world.length) {
                     apple.respawn(snake.position, snake.length, world.length);
-                    this.appleBit.position.x = apple.position * world.tileSize + world.xOffset;
+                    this.appleBit.position.x = apple.position * world.tileSize;
                 }
                 else {
                     this.appleBit.destroy();
