@@ -71,6 +71,7 @@ MainState.prototype = {
     preload: function() {
         /* load all assets here */
         game.load.image('head',  getSpritePath('snakehead'));
+        game.load.image('headdead',  getSpritePath('snakeheaddead'));
         game.load.image('snake', getSpritePath('snakebody'));
         game.load.image('apple', getSpritePath('apple'));
         game.load.image('bgtile',    getSpritePath('bgtile'));
@@ -113,7 +114,7 @@ MainState.prototype = {
         this.sceneGroup.addChild(this.bgTiles);
         this.sceneGroup.addChild(this.snakeBits);
         this.sceneGroup.addChild(this.appleBit);
-        this.scaleSceneSprites();
+        this.scaleSceneGroup();
     },
     buttonTextOver: function() {
         this.children.forEach(function(child) {
@@ -152,9 +153,9 @@ MainState.prototype = {
         this.uiGroup.addChild(this.highScoreText);
         this.uiGroup.addChild(this.endScoreText);
         this.uiGroup.addChild(this.restartButton);
-        this.scaleUiSprites();
+        this.scaleUiGroup();
     },
-    scaleSceneSprites: function() {
+    scaleSceneGroup: function() {
         const maxWidth = game.world.width - (2 * world.xMargin);
         const tileSize = Math.trunc(maxWidth / world.length);
         const tileScale = tileSize / world.tileSize;
@@ -164,7 +165,7 @@ MainState.prototype = {
         this.sceneGroup.y = game.world.height / 2;
         this.sceneGroup.scale.set(tileScale, tileScale);
     },
-    scaleUiSprites: function() {
+    scaleUiGroup: function() {
         let large = 56;
         let small = 40;
         let spacing = 60;
@@ -184,6 +185,8 @@ MainState.prototype = {
         this.highScoreText.setStyle(textStyle.fg(small));
         this.endScoreText.setStyle(textStyle.fg(small));
 
+        textFlasher.updateStyleSizes(this.scoreNumberText);
+
         var yPos = world.yMargin;
         var xPos = game.world.width / 2;
 
@@ -191,10 +194,11 @@ MainState.prototype = {
         util.recentreText(this.highScoreText, xPos, yPos + spacing);
         util.recentreText(this.endScoreText,  xPos, yPos + spacing * 2);
         util.recentreText(this.restartButton, xPos, yPos + spacing * 3);
+        this.scoreNumberText.x = this.scoreText.width;
     },
     rescale: function() {
-        this.scaleSceneSprites();
-        this.scaleUiSprites();
+        this.scaleSceneGroup();
+        this.scaleUiGroup();
     },
     create: function() {
         /* set up game objects here */
@@ -284,6 +288,8 @@ MainState.prototype = {
         this.endScoreText.text = "Your score: " + this.score;
         util.recentreText(this.highScoreText, game.world.width / 2);
         util.recentreText(this.endScoreText, game.world.width / 2);
+
+        this.snakeBits.children[0].loadTexture('headdead');
         flasher.start(this.snakeBits);
 
         //this.gameoverSFX.play();

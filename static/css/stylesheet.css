@@ -1,15 +1,15 @@
-/*
-    bg:        '#091f34', // dark blue
-    fg:        '#fdfdfd',
-    white:     '#fdfdfd',
-    pink:      '#fc8cc0',
-    red:       '#fd2970',
-    orange:    '#fd8e25',
-    yellow:    '#f2e31d',
-    green:     '#7efebe',
-    lightBlue: '#6ee5fd',
-    darkBlue:  '#2c6795',
-*/
+:root {
+    --clr-bg:        '#091f34';
+    --clr-fg:        '#fdfdfd';
+    --clr-white:     '#fdfdfd';
+    --clr-pink:      '#fc8cc0';
+    --clr-red:       '#fd2970';
+    --clr-orange:    '#fd8e25';
+    --clr-yellow:    '#f2e31d';
+    --clr-green:     '#7efebe';
+    --clr-lightBlue: '#6ee5fd';
+    --clr-darkBlue:  '#2c6795';
+}
 
 @font-face
 {
@@ -30,7 +30,7 @@ html {
 body {
     margin: 0;
     padding: 0;
-    background-color: #091f34;
+    background-color: var(--clr-pink);
 }
 
 canvas {
@@ -47,7 +47,7 @@ header {
 }
 
 a, a:visited, a:hover {
-    color: #6ee5fd;
+    color: var(--clr-lightBlue);
 }
 a:hover {
     text-decoration: none;

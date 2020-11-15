@@ -81,6 +81,11 @@ const textFlasher = {
             fontSize: text.style.fontSize,
         }
     },
+    updateStyleSizes: function(text) {
+        // in case the text style has updated due to scaling etc.
+        text.originalStyle.fontSize = text.style.fontSize;
+        text.flashStyle.fontSize = text.style.fontSize;
+    },
     start: function(text) {
         text.setStyle(text.originalStyle);
         text.flashCount = 0;
