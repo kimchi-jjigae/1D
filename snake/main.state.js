@@ -113,6 +113,16 @@ MainState.prototype = {
         this.sceneGroup.addChild(this.appleBit);
         this.scaleSceneSprites();
     },
+    buttonTextOver: function() {
+        this.children.forEach(function(child) {
+            child.setStyle(textStyle.bg(child.style.fontSize));
+        });
+    },
+    buttonTextOut: function() {
+        this.children.forEach(function(child) {
+            child.setStyle(textStyle.fg(child.style.fontSize));
+        });
+    },
     createUiSprites: function() {
         if(this.uiGroup) this.uiGroup.destroy();
         this.uiGroup = game.add.group();
@@ -122,6 +132,9 @@ MainState.prototype = {
         this.highScoreText = game.add.text(0, 0, "High score: ", textStyle.fg(32));
         this.endScoreText = game.add.text(0, 0, "Your score: ", textStyle.fg(32));
         this.restartButton = game.add.button(0, 0, 'button', this.restart, this, 1, 0, 1);
+        this.restartButton.addChild(game.add.text(12, 15, "PLAY AGAIN", textStyle.fg(30)));
+        this.restartButton.onInputOver.add(this.buttonTextOver, this.restartButton);
+        this.restartButton.onInputOut.add(this.buttonTextOut, this.restartButton);
 
         this.gameOverText.visible = false;
         this.highScoreText.visible = false;
@@ -221,6 +234,7 @@ MainState.prototype = {
             }
             if(!this.gameOver && this.eatTail()) {
                 this.gameOver = true;
+                this.scoreText.visible = false;
                 this.gameOverText.visible = true;
                 this.highScoreText.visible = true;
                 this.endScoreText.visible = true;

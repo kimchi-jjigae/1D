@@ -25,15 +25,23 @@ const colour = {
     darkBlue:  '#2c6795',
 }
 
+const fontName = 'vcrosdmono';
 
 const textStyle = {
+    bg: function(size) {
+        return {
+            font: fontName,
+            fill: colour.bg,
+            fontSize: size,
+        }
+    },
     fg: function(size) {
         return {
-            font: 'vcrosdmono',
+            font: fontName,
             fill: colour.fg,
             fontSize: size,
         }
-    }
+    },
 };
 
 const world = {
