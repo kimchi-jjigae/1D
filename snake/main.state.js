@@ -45,8 +45,8 @@ Apple.prototype = {
 var snake = new Snake();
 var apple = new Apple();
 
-var MainState = function() {};
 
+var MainState = function() {};
 MainState.prototype = {
     tickRate: 300,
     lastTicked: Date.now(),
@@ -56,6 +56,7 @@ MainState.prototype = {
     appleBit: undefined,
 
     uiGroup: undefined,
+    debugText: undefined,
     scoreText: undefined,
     gameOverText: undefined,
     highScoreText: undefined,
@@ -106,6 +107,7 @@ MainState.prototype = {
         for(var i = 1; i < snake.length; ++i) {
             bit = this.snakeBits.create((snake.position - i) * world.tileSize, 0, 'snake');
         }
+        flasher.make(this.snakeBits);
         this.appleBit = game.add.sprite(apple.position * world.tileSize, 0, 'apple');
 
         this.sceneGroup.addChild(this.bgTiles);
@@ -127,7 +129,8 @@ MainState.prototype = {
         if(this.uiGroup) this.uiGroup.destroy();
         this.uiGroup = game.add.group();
 
-        this.scoreText = game.add.text(world.xMargin, world.yMargin, "Score: 0", textStyle.fg(56));
+        this.scoreText = game.add.text(world.xMargin, world.yMargin, "Score: ", textStyle.fg(56));
+        this.scoreNumberText = game.add.text(world.xMargin + this.scoreText.width, world.yMargin, "0", textStyle.fg(56));
         this.gameOverText = game.add.text(0, 0, "GAME OVER!", textStyle.fg(56));
         this.highScoreText = game.add.text(0, 0, "High score: ", textStyle.fg(32));
         this.endScoreText = game.add.text(0, 0, "Your score: ", textStyle.fg(32));
@@ -136,12 +139,15 @@ MainState.prototype = {
         this.restartButton.onInputOver.add(this.buttonTextOver, this.restartButton);
         this.restartButton.onInputOut.add(this.buttonTextOut, this.restartButton);
 
+        textFlasher.make(this.scoreNumberText, 2);
+
         this.gameOverText.visible = false;
         this.highScoreText.visible = false;
         this.endScoreText.visible = false;
         this.restartButton.visible = false;
 
         this.uiGroup.addChild(this.scoreText);
+        this.uiGroup.addChild(this.scoreNumberText);
         this.uiGroup.addChild(this.gameOverText);
         this.uiGroup.addChild(this.highScoreText);
         this.uiGroup.addChild(this.endScoreText);
@@ -173,6 +179,7 @@ MainState.prototype = {
             spacing = 44;
         }
         this.scoreText.setStyle(textStyle.fg(large));
+        this.scoreNumberText.setStyle(textStyle.fg(large));
         this.gameOverText.setStyle(textStyle.fg(large));
         this.highScoreText.setStyle(textStyle.fg(small));
         this.endScoreText.setStyle(textStyle.fg(small));
@@ -198,6 +205,10 @@ MainState.prototype = {
         game.scale.pageAlignVertically = true;
         game.scale.onSizeChange.add(this.rescale, this);
 
+        /* debug */
+        this.debugText = game.add.text(0, 0, "dbg", textStyle.fg(18));
+        this.debugText.visible = false;
+
         /* scene sprites */
         game.stage.backgroundColor = colour.bg;
         game.stage.smoothed = false;
@@ -211,16 +222,16 @@ MainState.prototype = {
         this.gameoverSFX = game.add.audio('gameover');
 
         /* input */
-
-        var self = this;
+        game.input.onTap.add(function() { this.lastTicked = 0; }, this);
+        game.input.keyboard.callbackContext = this;
         game.input.keyboard.onDownCallback = function(event) {
             if(keycodes.right.includes(event.key)) {
                 // → right
-                self.lastTicked = 0;
+                this.lastTicked = 0;
             }
             else if(keycodes.restart.includes(event.key)) {
                 // R restart
-                self.restart()
+                this.restart()
             }
         };
     },
@@ -233,23 +244,12 @@ MainState.prototype = {
                 bit.position.x = pos * world.tileSize;
             }
             if(!this.gameOver && this.eatTail()) {
-                this.gameOver = true;
-                this.scoreText.visible = false;
-                this.gameOverText.visible = true;
-                this.highScoreText.visible = true;
-                this.endScoreText.visible = true;
-                this.restartButton.visible = true;
-
-                this.highScoreText.text = "High score: " + this.score;
-                this.endScoreText.text = "Your score: " + this.score;
-                util.recentreText(this.highScoreText, game.world.width / 2);
-                util.recentreText(this.endScoreText, game.world.width / 2);
-
-                //this.gameoverSFX.play();
+                this.lose();
             }
             else if(this.eatApple()) {
                 this.score++;
-                this.scoreText.text = "Score: " + this.score;
+                this.scoreNumberText.text = this.score;
+                textFlasher.start(this.scoreNumberText);
 
                 snake.grow();
                 var pos = (snake.position - snake.length + 1) % world.length;
@@ -267,7 +267,26 @@ MainState.prototype = {
             }
         }
         else if(this.gameOver) {
+            flasher.update(this.snakeBits);
         }
+        textFlasher.update(this.scoreNumberText);
+    },
+    lose: function() {
+        this.gameOver = true;
+        this.scoreText.visible = false;
+        this.scoreNumberText.visible = false;
+        this.gameOverText.visible = true;
+        this.highScoreText.visible = true;
+        this.endScoreText.visible = true;
+        this.restartButton.visible = true;
+
+        this.highScoreText.text = "High score: " + this.score;
+        this.endScoreText.text = "Your score: " + this.score;
+        util.recentreText(this.highScoreText, game.world.width / 2);
+        util.recentreText(this.endScoreText, game.world.width / 2);
+        flasher.start(this.snakeBits);
+
+        //this.gameoverSFX.play();
     },
     timeToTick: function() {
         var itIsTime = false;

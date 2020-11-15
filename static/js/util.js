@@ -43,3 +43,59 @@ const util = {
         }
     },
 };
+
+const flasher = {
+    /* objects need a .visible attribute to be made flashy */
+    make: function(object, flashCount, tickRate) {
+        // double this value to account for both on and off:
+        object.flashCountMax = flashCount ? flashCount * 2 : 8;
+        object.flashCount = object.flashCountMax;
+        object.tickRate = tickRate ? tickRate : 100;
+        object.lastTicked = Date.now();
+    },
+    start: function(object) {
+        object.visible = true;
+        object.flashCount = 0;
+    },
+    stop: function(object) {
+        object.visible = true;
+        object.flashCount = object.flashCountMax;
+    },
+    update: function(object) {
+        if(object.flashCount >= object.flashCountMax) return;
+        if(Date.now() - object.lastTicked >= object.tickRate) {
+            object.lastTicked = Date.now();
+            object.visible = !object.visible;
+            ++object.flashCount;
+        }
+    },
+};
+const textFlasher = {
+    make: function(text, flashCount, flashColour, tickRate) {
+        flashColour = flashColour ? flashColour : '#fd2970';
+        flasher.make(text, flashCount, tickRate);
+        text.originalStyle = text.style;
+        text.flashStyle = {
+            font: text.style.font,
+            fill: flashColour,
+            fontSize: text.style.fontSize,
+        }
+    },
+    start: function(text) {
+        text.setStyle(text.originalStyle);
+        text.flashCount = 0;
+    },
+    stop: function(text) {
+        text.setStyle(text.originalStyle);
+        text.flashCount = text.flashCountMax;
+    },
+    update: function(text) {
+        if(text.flashCount >= text.flashCountMax) return;
+        if(Date.now() - text.lastTicked >= text.tickRate) {
+            let style = text.flashCount % 2 == 0 ? text.flashStyle : text.originalStyle;
+            text.setStyle(style);
+            text.lastTicked = Date.now();
+            ++text.flashCount;
+        }
+    },
+};
