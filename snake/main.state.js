@@ -1,6 +1,5 @@
 'use strict';
 
-//var game = new Phaser.Game(world.w, world.h, Phaser.AUTO, '', null, false, false);
 var game = new Phaser.Game("100%", "100%", Phaser.AUTO, '', null, false, false);
 
 var Snake = function() {};
@@ -60,7 +59,6 @@ MainState.prototype = {
     scoreText: undefined,
     gameOverText: undefined,
     highScoreText: undefined,
-    scoreText: undefined,
     restartButton: undefined,
 
     score: 0,
@@ -94,14 +92,7 @@ MainState.prototype = {
         apple.reset();
 
         this.createSceneSprites();
-
-        this.scoreText.destroy();
-        this.scoreText = game.add.text(world.xOffset, 0, "Score: 0", textStyle.large);
-        if(this.gameOverText) {
-            this.gameOverText.visible = false;
-            this.highScoreText.visible = false;
-        }
-        this.restartButton.visible = false;
+        this.createUiSprites();
     },
     createSceneSprites: function() {
         if(this.sceneGroup) this.sceneGroup.destroy();
@@ -121,6 +112,32 @@ MainState.prototype = {
         this.sceneGroup.addChild(this.appleBit);
         this.sceneGroup.scale.set(4, 4);
     },
+    createUiSprites: function() {
+        if(this.uiGroup) this.uiGroup.destroy();
+        this.uiGroup = game.add.group();
+
+        var yPos = 100;
+        var xPos = game.world.width / 2;
+        this.scoreText = game.add.text(world.xOffset, yPos, "Score: 0", textStyle.large);
+        this.gameOverText = game.add.text(xPos, yPos, "GAME OVER!", textStyle.large);
+        this.highScoreText = game.add.text(xPos, yPos + 60, "High score: ", textStyle.small);
+        this.endScoreText = game.add.text(xPos, yPos + 120, "Your score: ", textStyle.small);
+        this.restartButton = game.add.button(xPos, yPos + 180, 'button', this.restart, this, 1, 0, 1);
+        util.recentreText(this.gameOverText);
+        util.recentreText(this.restartButton);
+
+        this.gameOverText.visible = false;
+        this.highScoreText.visible = false;
+        this.endScoreText.visible = false;
+        this.restartButton.visible = false;
+
+        this.uiGroup.addChild(this.scoreText);
+        this.uiGroup.addChild(this.gameOverText);
+        this.uiGroup.addChild(this.highScoreText);
+        this.uiGroup.addChild(this.endScoreText);
+        this.uiGroup.addChild(this.restartButton);
+        //this.uiGroup.scale.set(4, 4);
+    },
 /*
     rescale: function() {
         // the game doesn't resize reight away, so we need to delay here
@@ -133,7 +150,7 @@ MainState.prototype = {
         /* set up game objects here */
         // Maintain aspect ratio & center    
         //game.scale.forceOrientation(true);
-        game.scale.scaleMode = Phaser.ScaleManager.RESIZE;
+        //game.scale.scaleMode = Phaser.ScaleManager.RESIZE;
         game.scale.pageAlignHorizontally = true;
         game.scale.pageAlignVertically = true;
 /*
@@ -148,7 +165,7 @@ MainState.prototype = {
         this.createSceneSprites();
 
         /* ui sprites */
-        this.scoreText = game.add.text(world.xOffset, 0, "Score: 0", textStyle.large);
+        this.createUiSprites();
 
         /* sfx */
         this.blopp = game.add.audio('blopp');
@@ -177,18 +194,18 @@ MainState.prototype = {
                 bit.position.x = pos * world.tileSize + world.xOffset;
             }
             if(!this.gameOver && this.eatTail()) {
-                var yPos = 100;
-                this.scoreText.destroy()
-                this.gameOverText = game.add.text(game.world.width / 2, yPos, "GAME OVER!", textStyle.large);
-                this.highScoreText = game.add.text(game.world.width / 2, yPos + 60, "High score: " + this.score, textStyle.small);
-                this.scoreText = game.add.text(game.world.width / 2, yPos + 120, "Your score: " + this.score, textStyle.small);
-                util.recentreText(this.gameOverText);
-                util.recentreText(this.scoreText);
-                util.recentreText(this.highScoreText);
-                //this.gameoverSFX.play();
-                this.restartButton = game.add.button(game.world.width / 2, 290, 'button', this.restart, this, 1, 0, 1);
-                util.recentreText(this.restartButton);
                 this.gameOver = true;
+                this.gameOverText.visible = true;
+                this.highScoreText.visible = true;
+                this.endScoreText.visible = true;
+                this.restartButton.visible = true;
+
+                this.highScoreText.text = "High score: " + this.score;
+                this.endScoreText.text = "Your score: " + this.score;
+                util.recentreText(this.highScoreText);
+                util.recentreText(this.endScoreText);
+
+                //this.gameoverSFX.play();
             }
             else if(this.eatApple()) {
                 this.score++;

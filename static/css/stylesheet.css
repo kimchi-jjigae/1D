@@ -53,7 +53,7 @@ a:hover {
     text-decoration: none;
 }
 
-@media screen and (orientation: portrait) {
+@media (hover:none) and (orientation: portrait) {
   html {
     transform: rotate(-90deg);
     transform-origin: left top;
