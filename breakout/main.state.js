@@ -2,97 +2,63 @@
 
 var game = new Phaser.Game("100%", "100%", Phaser.AUTO, '', null, false, false);
 
-var Snake = function() {};
-Snake.prototype = {
-    length: 4,
-    position: 4,
-    grow: function() {
-        this.length++;
-    },
-    reset: function() {
-        this.length = 4;
-        this.position = 4;
-    }
-};
-
-var Apple = function() {};
-Apple.prototype = {
-    position: 8,
-    respawn: function(snakePosition, snakeLength, worldLength) {
-        var head = snakePosition % worldLength;
-        var tail = ((snakePosition - snakeLength) % worldLength) + 1;
-
-        var newPos = util.randomInt(20);
-        while(withinSnake(newPos, head, tail)) {
-            newPos = util.randomInt(20);
-        }
-        this.position = newPos;
-
-        function withinSnake(applePos, head, tail) {
-            if(head > tail) {
-                return applePos >= tail && applePos <= head
-            }
-            else {
-                return applePos <= head || applePos >= tail;
-            }
-        }
-    },
-	reset: function() {
-        this.position = 8;
-    }
-};
-
-var snake = new Snake();
-var apple = new Apple();
-
+world.length = 40;
+world.tileSize = 8;
 
 var MainState = function() {};
 MainState.prototype = {
-    tickRate: 300,
-    lastTicked: Date.now(),
+    paddlePosition: 0,
+    ballPosition: 19,
+    ballVelocity: -0.5,
+    blockAmount: 4,
 
     sceneGroup: undefined,
-    snakeBits: undefined,
-    appleBit: undefined,
+    paddleSprite: undefined,
+    ballSprite:   undefined,
+    blockSprites: undefined,
 
     uiGroup: undefined,
-    debugText: undefined,
-    scoreText: undefined,
+    debugText:       undefined,
+    scoreText:       undefined,
     scoreNumberText: undefined,
-    gameOverText: undefined,
-    highScoreText: undefined,
-    endScoreText: undefined,
-    restartButton: undefined,
+    gameOverText:    undefined,
+    highScoreText:   undefined,
+    endScoreText:    undefined,
+    restartButton:   undefined,
 
-    score: 0,
+    score:    0,
     gameOver: false,
 
-    bloppSfx: undefined,
+    bloppSfx:  undefined,
     pickupSfx: undefined,
-    gameoverSfx: undefined,
+    youWinSfx: undefined,
 
     preload: function() {
         /* load all assets here */
-        game.load.image('head',     getSpritePath('snakehead'));
-        game.load.image('headdead', getSpritePath('snakeheaddead'));
-        game.load.image('snake',    getSpritePath('snakebody'));
-        game.load.image('apple',    getSpritePath('apple'));
-        game.load.image('bgtile',   getSpritePath('bgtile'));
+        game.load.image('paddle', getSpritePath('paddle'));
+        game.load.image('ball',   getSpritePath('ball'));
+        game.load.image('block0', getSpritePath('block0'));
+        game.load.image('block1', getSpritePath('block1'));
+        game.load.image('block2', getSpritePath('block2'));
+        game.load.image('block3', getSpritePath('block3'));
+        game.load.image('bgtile', getSpritePath('bgtilehalf'));
         game.load.spritesheet('button', getSpritePath('button-200x60'), 200, 60, 2);
 
-        game.load.audio('blopp',   getSfxPath('move'));
-        game.load.audio('pickup',  getSfxPath('pickup'));
-        game.load.audio('gameover', getSfxPath('gameover'));
+        game.load.audio('blopp',  getSfxPath('move'));
+        game.load.audio('pickup', getSfxPath('pickup'));
+        game.load.audio('youwin', getSfxPath('youwin'));
 
-        // necessary for loading the font:
+        // necessary to preload the font lol
         game.add.text(0, 0, "", textStyle.fg(56));
     },
     restart: function() {
         this.score = 0;
         this.gameOver = false;
 
-        snake.reset();
-        apple.reset();
+        this.paddlePosition = 0;
+        this.ballPosition = 19;
+        this.ballVelocity = -0.5;
+        this.blockAmount = 4;
 
         this.createSceneSprites();
         this.createUiSprites();
@@ -101,29 +67,34 @@ MainState.prototype = {
     createSceneSprites: function() {
         if(this.sceneGroup) this.sceneGroup.destroy();
         this.sceneGroup = game.add.group();
+        if(this.bgTiles) this.bgTiles.destroy();
         this.bgTiles = game.add.group();
-        this.snakeBits = game.add.group();
-        this.snakeBits.classType = Phaser.Image;
+        this.blockSprites = game.add.group();
+        this.blockSprites.classType = Phaser.Image;
 
         util.createTileBg(this.bgTiles, world.length, 'bgtile', world.tileSize, 0);
-        var bit = this.snakeBits.create((snake.position) * world.tileSize, 0, 'head');
-        for(var i = 1; i < snake.length; ++i) {
-            bit = this.snakeBits.create((snake.position - i) * world.tileSize, 0, 'snake');
+        for(var i = 0; i < this.blockAmount; ++i) {
+            var position = (world.length - 1) - i;
+            var block = this.blockSprites.create(position * world.tileSize, 0, 'block' + i);
+            block.tilePosition = position;
         }
-        flasher.make(this.snakeBits);
-        this.appleBit = game.add.image(apple.position * world.tileSize, 0, 'apple');
+        this.paddleSprite = game.add.sprite(this.paddlePosition * world.tileSize, 0, 'paddle');
+        this.ballSprite = game.add.sprite(this.ballPosition * world.tileSize, 0, 'ball');
 
         this.sceneGroup.addChild(this.bgTiles);
-        this.sceneGroup.addChild(this.snakeBits);
-        this.sceneGroup.addChild(this.appleBit);
+        this.sceneGroup.addChild(this.blockSprites);
+        this.sceneGroup.addChild(this.paddleSprite);
+        this.sceneGroup.addChild(this.ballSprite);
         this.scaleSceneGroup();
     },
     buttonTextOver: function() {
+        // context (this) should refer to the button parent object
         this.children.forEach(function(child) {
             child.setStyle(textStyle.bg(child.style.fontSize));
         });
     },
     buttonTextOut: function() {
+        // context (this) should refer to the button parent object
         this.children.forEach(function(child) {
             child.setStyle(textStyle.fg(child.style.fontSize));
         });
@@ -134,7 +105,7 @@ MainState.prototype = {
 
         this.scoreText = game.add.text(world.xMargin, world.yMargin, "Score: ", textStyle.fg(56));
         this.scoreNumberText = game.add.text(world.xMargin + this.scoreText.width, world.yMargin, "0", textStyle.fg(56));
-        this.gameOverText = game.add.text(0, 0, "GAME OVER!", textStyle.fg(56));
+        this.gameOverText = game.add.text(0, 0, "YOU WIN!", textStyle.fg(56));
         this.highScoreText = game.add.text(0, 0, "High score: ", textStyle.fg(32));
         this.endScoreText = game.add.text(0, 0, "Your score: ", textStyle.fg(32));
         this.restartButton = game.add.button(0, 0, 'button', this.restart, this, 1, 0, 1);
@@ -255,101 +226,67 @@ MainState.prototype = {
         this.createUiSprites();
 
         /* sfx */
-        this.bloppSfx = game.add.audio('blopp', 0.5);
+        this.bloppSfx =  game.add.audio('blopp',  0.5);
         this.pickupSfx = game.add.audio('pickup', 0.3);
-        this.gameoverSfx = game.add.audio('gameover');
+        this.youWinSfx = game.add.audio('youwin', 0.2);
 
         /* input */
-        game.input.onTap.add(function() { this.lastTicked = 0; }, this);
         game.input.keyboard.callbackContext = this;
         game.input.keyboard.onDownCallback = function(event) {
-            if(keycodes.right.includes(event.key)) {
-                // → right
-                this.lastTicked = 0;
-            }
-            else if(keycodes.restart.includes(event.key)) {
-                // R restart
-                this.restart()
-            }
+            if(keycodes.restart.includes(event.key)) { this.restart() }
         };
     },
     update: function() {
-        if(this.timeToTick() && !this.gameOver) {
-            snake.position++;
-            this.bloppSfx.play();
-            for(var i = 0; i < this.snakeBits.length; ++i) {
-                var bit = this.snakeBits.children[i];
-                var pos = (snake.position - i) % world.length;
-                bit.position.x = pos * world.tileSize;
+        if(!this.gameOver) {
+            this.ballPosition += this.ballVelocity;
+            this.ballSprite.position.x = this.ballPosition * world.tileSize;
+
+            if(this.blockSprites.children.length == 0) {
+                this.win();
             }
-            if(!this.gameOver && this.eatTail()) {
-                this.lose();
+            else if(this.ballPosition <= this.paddlePosition + 1) {
+                this.ballVelocity *= -1;
+                this.bloppSfx.play();
             }
-            else if(this.eatApple()) {
+            else if(this.ballPosition >= this.getLastBlock().tilePosition - 1) {
+                this.ballVelocity *= -1;
                 this.score++;
                 this.scoreNumberText.text = this.score;
                 textFlasher.start(this.scoreNumberText);
 
-                snake.grow();
-                var pos = (snake.position - snake.length + 1) % world.length;
-                var bit = this.snakeBits.create(pos * world.tileSize, world.yOffset, 'snake');
-
-                this.pickupSfx.play();
-
-                if(snake.length < world.length) {
-                    apple.respawn(snake.position, snake.length, world.length);
-                    this.appleBit.position.x = apple.position * world.tileSize;
+                if(this.blockSprites.children.length != 1) {
+                    this.pickupSfx.play();
                 }
-                else {
-                    this.appleBit.destroy();
-                }
+                this.getLastBlock().destroy();
             }
+            textFlasher.update(this.scoreNumberText);
         }
-        else if(this.gameOver) {
-            flasher.update(this.snakeBits);
-        }
-        textFlasher.update(this.scoreNumberText);
     },
-    lose: function() {
+    win: function() {
         this.gameOver = true;
-        this.scoreText.visible = false;
-        this.scoreNumberText.visible = false;
-        this.gameOverText.visible = true;
-        this.highScoreText.visible = true;
-        this.endScoreText.visible = true;
-        this.restartButton.visible = true;
 
+        this.scoreText.visible =       false;
+        this.scoreNumberText.visible = false;
+        this.gameOverText.visible =  true;
+        this.highScoreText.visible = true;
+        this.endScoreText.visible =  true;
+        this.restartButton.visible = true;
         this.highScoreText.text = "High score: " + this.score;
-        this.endScoreText.text = "Your score: " + this.score;
+        this.endScoreText.text = "Your score: "  + this.score;
         if(util.deviceInPortraitMode(game)) {
             util.recentreText(this.highScoreText, game.world.height / 2);
-            util.recentreText(this.endScoreText, game.world.height / 2);
+            util.recentreText(this.endScoreText,  game.world.height / 2);
         }
         else {
             util.recentreText(this.highScoreText, game.world.width / 2);
-            util.recentreText(this.endScoreText, game.world.width / 2);
+            util.recentreText(this.endScoreText,  game.world.width / 2);
         }
 
-        this.snakeBits.children[0].loadTexture('headdead');
-        flasher.start(this.snakeBits);
-
-        this.gameoverSfx.play();
+        this.youWinSfx.play();
     },
-    timeToTick: function() {
-        var itIsTime = false;
-        if(Date.now() - this.lastTicked >= this.tickRate) {
-            this.lastTicked = Date.now();
-            itIsTime = true;
-        }
-        return itIsTime;
-    },
-    eatApple: function() {
-        return (snake.position % world.length) == apple.position
-    },
-    eatTail: function() {
-        var head = snake.position % world.length;
-        var tail = (snake.position - snake.length) % world.length;
-        return head == tail;
+    getLastBlock: function() {
+        var last = this.blockSprites.children.length - 1;
+        return this.blockSprites.children[last];
     }
 };
 

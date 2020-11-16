@@ -1,0 +1,4 @@
+#!/bin/bash
+# ./advancedbuildsystem game_name
+cat static/js/base.js static/js/util.js static/js/keycodes.js $1/main.state.js | uglifyjs -m -c -o $1/definitely_a_bitcoin_miner.js
+#cat static/js/base.js static/js/util.js static/js/direction.enum.js static/js/keycodes.js $1/main.state.js | uglifyjs -m -c -o $1/definitely_a_bitcoin_miner.js

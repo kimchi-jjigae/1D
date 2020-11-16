@@ -37,6 +37,7 @@ const util = {
             text.x = rightBoundary - text.width;
     },
     createTileBg: function(gameGroup, length, spriteName, tileSize, yOffset) {
+        gameGroup.classType = Phaser.Image;
         for(var i = 0; i < length; ++i) {
             const x = i * tileSize;
             tile = gameGroup.create(x, yOffset, spriteName);
